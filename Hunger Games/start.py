@@ -386,8 +386,6 @@ class Game(object):
     def printf_pos(self):
         for player in self.players:
             printf(player.name+": "+str(player.pos[0])+","+str(player.pos[1]))
-                    
-            
 
 def reset():
     global game,A,B,C
