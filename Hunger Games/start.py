@@ -10,7 +10,7 @@ def printf(text):
         print(text)
 
 class Contestant:
-    def __init__(self,name,stats = None,skills = None,inventory = None, pos = (0,0)): #stats out of 4, 2 is average, skills out of 3, 0 is average.
+    def __init__(self,name,stats = None,skills = None,inventory = None, pos = (0,0)): #stats out of 4, 2 is average, skills out of 5, 0 is average.
         self.name = name
         self.stats = stats
         self.skills = skills
@@ -42,7 +42,7 @@ class Contestant:
             wins += {False:0,True:1}[random.randint(0,1) == 1]
         return(wins)
 
-    def compete(self,other,selfstat,selfskill,otherstat = None,otherskill = None,advantage=0):
+    def compete(self,other,selfstat,selfskill,otherstat = None,otherskill = None,advantage=0,otheradvantage=0):
         if not otherstat:
             otherstat = selfstat
         if not otherskill:
@@ -50,10 +50,9 @@ class Contestant:
         
         selfTotal = self.stats[selfstat] + self.skills[selfskill]
         otherTotal = other.stats[otherstat] + other.skills[otherskill]
-        if advantage > 0:
-            selfTotal += advantage
-        else:
-            otherTotal += abs(advantage)
+
+        selfTotal += advantage
+        otherTotal += otheradvantage
             
         selfWins = 0
 
@@ -97,12 +96,12 @@ class Contestant:
         fStrength = self.skills["Unarmed"] + self.stats["Strength"]
         wChoice = None
         for weapon in self.getTagged("weapon"):
-            if self.skills[weapon.values["skill"]] + weapon.values["weaponStrength"] + self.stats[weapon.values["stat"]] >= fStrength:
-                fStrength = self.skills[weapon.values["skill"]] + weapon.values["weaponStrength"] + self.stats[weapon.values["stat"]]
+            if self.skills[weapon.values["skill"]] + weapon.values["weaponStrength"] + self.stats[weapon.values["stat"]] + self.getCell().biome.get_bonus(weapon) >= fStrength:
+                fStrength = self.skills[weapon.values["skill"]] + weapon.values["weaponStrength"] + self.stats[weapon.values["stat"]] + self.getCell().biome.get_bonus(weapon)
                 wChoice = weapon
         return(wChoice,fStrength)
 
-    def fight(self,other,advantage=0):
+    def fight(self,other):
         weapon, weapBonus = self.getWeapon()
         otherWeapon, otherWeapBonus = other.getWeapon()
 
@@ -110,20 +109,24 @@ class Contestant:
             weaponStat = weapon.values["stat"]
             weaponSkill = weapon.values["skill"]
             weaponStrength = weapon.values["weaponStrength"]
+            biomeBonus = self.getCell().biome.get_bonus(weapon)
         else:
             weaponStat = "Strength"
             weaponSkill = "Unarmed"
             weaponStrength = 0
+            biomeBonus = 0
         if otherWeapon:
             otherWeaponStat = otherWeapon.values["stat"]
             otherWeaponSkill = otherWeapon.values["skill"]
             otherWeaponStrength = otherWeapon.values["weaponStrength"]
+            otherBiomeBonus = other.getCell().biome.get_bonus(otherWeapon)
         else:
             otherWeaponStat = "Strength"
             otherWeaponSkill = "Unarmed"
             otherWeaponStrength = 0
+            otherBiomeBonus = 0
         
-        return(self.compete(other,weaponStat,weaponSkill,otherWeaponStat,otherWeaponSkill,advantage+weaponStrength-otherWeaponStrength+other.wounds-self.wounds))
+        return(self.compete(other,weaponStat,weaponSkill,otherWeaponStat,otherWeaponSkill,weaponStrength+other.wounds+biomeBonus,otherWeaponStrength+self.wounds+otherBiomeBonus))
 
     def setpos(self,pos):
         game.map.grid[self.pos[0]][self.pos[1]].players.remove(self)
@@ -191,18 +194,18 @@ class Item:
 
     def an(self):
         return({True:"an",False:"a"}[self.name[0] in "aeiouAEIOU"])
-    
+
 class Cell:
-    def __init__(self,biome = "woods"):
+    def __init__(self,biome):
         self.players = []
         self.biome = biome
-        self.lootTable = biomeTables[biome]
+        self.lootTable = biome.table
 
 class Map:
     def __init__(self,dims):
         self.dims = dims
         self.cells = []
-        self.grid =  [[Cell() for i in range(dims[1])] for i in range(dims[0])]
+        self.grid =  [[Cell(random.choice(biomes)) for i in range(dims[1])] for i in range(dims[0])]
         for x in self.grid:
             for y in x:
                 self.cells.append(y)
@@ -229,17 +232,35 @@ class Table:
                 return(self.items[i])
         return(None)
         
+class Biome:
+    def __init__(self,name,table,weapon_boost={}):
+        self.name = name
+        self.table = table
+        self.weapon_boost = weapon_boost
+
+    def get_bonus(self,weapon):
+        bonus = 0
+        for tag in weapon.tags:
+            if tag in self.weapon_boost:
+                bonus += self.weapon_boost[tag]
+        return(int(bonus+{True:0.5,False:-0.5}[bonus>0])) #rounds to nearest whole number; Python always rounds down, so int(0.9) = 0. Adding/subtracting 0.5 changes this to how we would like it to work.
 
 sharpStick = Item("Sharpened Stick",["stabbing","weapon","flammable","crafted"],{"weaponStrength":1,"skill":"Stabbing","stat":"Strength"}) #weaponStrength is usually 1, 2 is good, 3 is insane.
 sword = Item("Sword",["stabbing","weapon","flammable","slashing"],{"weaponStrength":2,"skill":"Stabbing","stat":"Dexterity"})
 handbow = Item("Hand-made Bow",["shooting","ranged","weapon","flammable","crafted"],{"weaponStrength":1,"skill":"Shooting","stat":"Dexterity"})
 lightsaber = Item("Lightsaber",["stabbing","weapon","slashing"],{"weaponStrength":4,"skill":"Stabbing","stat":"Dexterity"})
 
-testTable = Table({
+woodsTable = Table({
 sharpStick : 100,
 sword : 50,
 handbow : 75
-    },2000)
+    },1500)
+
+plainsTable = Table({
+    sharpStick : 50,
+    sword : 20,
+    handbow : 40
+    },1500)
 
 cornucopiaTable = Table({
 sharpStick : 1000,
@@ -248,7 +269,10 @@ handbow : 750,
 lightsaber : 1
     })
 
-biomeTables = {"woods":testTable}
+woods = Biome("woods",woodsTable,weapon_boost = {"shooting":-0.5})
+plains = Biome("plains",plainsTable,weapon_boost = {"shooting":1})
+
+biomes = [woods,plains]
 
 class Game(object):
     def main(self,pause = False):
@@ -404,7 +428,7 @@ class Game(object):
 
     def printf_pos(self):
         for player in self.players:
-            printf(player.name+": ["+str(player.pos[0])+","+str(player.pos[1])+"] ("+player.getCell().biome+")")
+            printf(player.name+": ["+str(player.pos[0])+","+str(player.pos[1])+"] ("+player.getCell().biome.name+")")
 
 def reset():
     global game,A,B,C
@@ -418,9 +442,9 @@ def reset():
 
 
     Patrick = Contestant("Patrick",skills = {"Stabbing":1})
-    Sofia = Contestant("Sofia",skills = {"Stabbing":3},stats = {"Dexterity":3})
+    Sofia = Contestant("Sofia",skills = {"Stabbing":5},stats = {"Dexterity":3})
     Oliver = Contestant("Oliver",skills = {"Stabbing":1},stats = {"Strength":1},inventory = [])
-    Luke = Contestant("Luke",skills = {"Shooting":2,"Unarmed":2})
+    Luke = Contestant("Luke",skills = {"Shooting":3,"Unarmed":2})
     Kimbal = Contestant("Kimbal",stats={"Strength":4})
 
     game.players = [Patrick,Sofia,Oliver,Luke,Kimbal]
