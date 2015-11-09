@@ -228,15 +228,16 @@ class Table:
     def fish(self):
         target = random.randint(1,self.intervals[-1])
         for i in range(len(self.intervals)-1):
-            if self.intervals[i] > target:
+            if self.intervals[i] >= target:
                 return(self.items[i])
         return(None)
         
 class Biome:
-    def __init__(self,name,table,weapon_boost={}):
+    def __init__(self,name,table,weapon_boost={},dangers = None):
         self.name = name
         self.table = table
         self.weapon_boost = weapon_boost
+        self.dangers = dangers
 
     def get_bonus(self,weapon):
         bonus = 0
@@ -269,7 +270,12 @@ handbow : 750,
 lightsaber : 1
     })
 
-woods = Biome("woods",woodsTable,weapon_boost = {"shooting":-0.5})
+woodsDangers = Table({
+    "beartrap" : 10
+    },2000)
+                
+
+woods = Biome("woods",woodsTable,weapon_boost = {"shooting":-0.5},dangers = woodsDangers)
 plains = Biome("plains",plainsTable,weapon_boost = {"shooting":1})
 
 biomes = [woods,plains]
@@ -340,19 +346,21 @@ class Game(object):
 
     def action_tick(self):
         for player in random.sample(self.players,len(self.players)):
-            if not random.randint(0,99):
-                #bear trap!
-                if player.challenge("Dexterity","Survival") < 2:
-                    printf(player.name + " gets their leg caught in a bear trap! They manage to force their leg out, but sustain a very nasty wound.")
-                    player.wounds += 2
-                else:
-                    printf(player.name + " narrowly evades catching their leg in a bear trap, "+{True:"jerking it out of the way at the last moment.",False:"spotting the trap just before they would have stepped on it."}[player.stats["Dexterity"]>player.skills["Survival"]])
+            if player.getCell().biome.dangers:
+                danger = player.getCell().biome.dangers.fish()
+                if danger == "beartrap":
+                    #bear trap!
+                    if player.challenge("Dexterity","Survival") < 2:
+                        printf(player.name + " gets their leg caught in a bear trap! They manage to force their leg out, but sustain a very nasty wound.")
+                        player.wounds += 2
+                    else:
+                        printf(player.name + " narrowly evades catching their leg in a bear trap, "+{True:"jerking it out of the way at the last moment.",False:"spotting the trap just before they would have stepped on it."}[player.stats["Dexterity"]>player.skills["Survival"]])
 
-            else:
-                loot = player.getCell().lootTable.fish()
-                if loot and not (loot in player.inventory and not "stackable" in loot.tags):
-                    printf(player.name+" "+{True:"made",False:"found"}["crafted" in loot.tags]+" "+loot.an()+" "+loot.name+"!")
-                    player.inventory.append(loot)
+                
+            loot = player.getCell().lootTable.fish()
+            if loot and not (loot in player.inventory and not "stackable" in loot.tags):
+                printf(player.name+" "+{True:"made",False:"found"}["crafted" in loot.tags]+" "+loot.an()+" "+loot.name+"!")
+                player.inventory.append(loot)
 
     def combat_tick(self):
         fight = False
@@ -446,8 +454,12 @@ def reset():
     Oliver = Contestant("Oliver",skills = {"Stabbing":1},stats = {"Strength":1},inventory = [])
     Luke = Contestant("Luke",skills = {"Shooting":3,"Unarmed":2})
     Kimbal = Contestant("Kimbal",stats={"Strength":4})
+    Phyllie = Contestant("Phyllie")
+    Deborah = Contestant("Deborah")
+    Chloe = Contestant("Chloe")
+    Josh = Contestant("Josh")
 
-    game.players = [Patrick,Sofia,Oliver,Luke,Kimbal]
+    game.players = [Patrick,Sofia,Oliver,Luke,Kimbal,Phyllie,Deborah,Chloe,Josh]
 
 reset()
 
@@ -463,8 +475,10 @@ printf("Kills:      "+str(len(game.players[0].kills)) + " (" + ", ".join([i.name
 def test(n):
     reset()
     wins = dict([(player.name,0) for player in game.players])
+    turns = []
     for i in range(n):
         reset()
         game.main()
         wins[game.players[0].name] += 1
-    return(wins)
+        turns.append(game.turn)
+    return(wins,sum(turns)/float(n))
