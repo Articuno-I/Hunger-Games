@@ -64,6 +64,9 @@ class Contestant:
 
         for i in range(otherTotal):
             otherWins += {False:0,True:1}[random.randint(0,1) == 1]
+
+        printf((self.name,selfTotal,selfWins))
+        printf((other.name,otherTotal,otherWins))
             
         if selfWins > otherWins:
             victory = True
@@ -73,6 +76,9 @@ class Contestant:
             victory = random.randint(0,1) == 1
 
         return((selfWins-otherWins,victory))
+
+    def getCell(self):
+        return(game.map.grid[self.pos[0]][self.pos[1]])
 
     def getTagged(self,tags):
         if type(tags) == type(""):
@@ -190,6 +196,7 @@ class Cell:
     def __init__(self,biome = "woods"):
         self.players = []
         self.biome = biome
+        self.lootTable = biomeTables[biome]
 
 class Map:
     def __init__(self,dims):
@@ -224,9 +231,9 @@ class Table:
         
 
 sharpStick = Item("Sharpened Stick",["stabbing","weapon","flammable","crafted"],{"weaponStrength":1,"skill":"Stabbing","stat":"Strength"}) #weaponStrength is usually 1, 2 is good, 3 is insane.
-sword = Item("Sword",["stabbing","weapon","flammable"],{"weaponStrength":2,"skill":"Stabbing","stat":"Dexterity"})
+sword = Item("Sword",["stabbing","weapon","flammable","slashing"],{"weaponStrength":2,"skill":"Stabbing","stat":"Dexterity"})
 handbow = Item("Hand-made Bow",["shooting","ranged","weapon","flammable","crafted"],{"weaponStrength":1,"skill":"Shooting","stat":"Dexterity"})
-lightsaber = Item("Lightsaber",["stabbing","weapon"],{"weaponStrength":4,"skill":"Stabbing","stat":"Dexterity"})
+lightsaber = Item("Lightsaber",["stabbing","weapon","slashing"],{"weaponStrength":4,"skill":"Stabbing","stat":"Dexterity"})
 
 testTable = Table({
 sharpStick : 100,
@@ -241,7 +248,7 @@ handbow : 750,
 lightsaber : 1
     })
 
-
+biomeTables = {"woods":testTable}
 
 class Game(object):
     def main(self,pause = False):
@@ -318,7 +325,7 @@ class Game(object):
                     printf(player.name + " narrowly evades catching their leg in a bear trap, "+{True:"jerking it out of the way at the last moment.",False:"spotting the trap just before they would have stepped on it."}[player.stats["Dexterity"]>player.skills["Survival"]])
 
             else:
-                loot = testTable.fish()
+                loot = player.getCell().lootTable.fish()
                 if loot and not (loot in player.inventory and not "stackable" in loot.tags):
                     printf(player.name+" "+{True:"made",False:"found"}["crafted" in loot.tags]+" "+loot.an()+" "+loot.name+"!")
                     player.inventory.append(loot)
@@ -346,13 +353,25 @@ class Game(object):
                     printf(victor.name + " defeats "+ loser.name + ".")
                     fight = True
                     self.turnSinceFight = 0
+                        
                     if extent + loser.wounds >= KILL_DIFFICULTY or len(game.players) <= LETHAL_POPULATION:
                         outcome = "kill"
-                        if victor.getWeapon()[0]:
+                        weapon = victor.getWeapon()[0]
+                        if weapon:
                             weapText = victor.getWeapon()[0].an() + " " + victor.getWeapon()[0].name
                         else:
                             weapText = "their bare hands"
-                        printf(victor.name+" kills "+loser.name+" with "+weapText+"!")
+                            
+                        if extent >= KILL_DIFFICULTY-1 and weapon:
+                            if "slashing" in weapon.tags:
+                                printf(victor.name + " DECAPITATES " + loser.name + " with a fell swoop of their "+weapon.name + "!")
+                            elif "stabbing" in weapon.tags:
+                                printf(victor.name + " IMPALES " + loser.name + " with a powerful thrust of their " + weapon.name + "!")
+                            else:
+                                printf(victor.name+" kills "+loser.name+" with "+weapText+"!")
+                                
+                        else:
+                            printf(victor.name+" kills "+loser.name+" with "+weapText+"!")
                         victor.kills.append(loser)
                         loser.kill()
                         victor.loot(loser)
@@ -363,7 +382,7 @@ class Game(object):
                             weapText = victor.getWeapon()[0].name
                         else:
                             weapText = random.choice(["battery","bludgeoning","assault"])
-                        printf(loser.name+" manages to escape, but sustains a nasty wound from "+victor.name+"'s "+weapText)
+                        printf(loser.name+" manages to escape, but sustains a nasty wound from "+victor.name+"'s "+weapText + "!")
                         
                     elif extent >= 1 and loser.inventory and random.randint(0,2):
                         outcome = "loot"
@@ -385,7 +404,7 @@ class Game(object):
 
     def printf_pos(self):
         for player in self.players:
-            printf(player.name+": "+str(player.pos[0])+","+str(player.pos[1]))
+            printf(player.name+": ["+str(player.pos[0])+","+str(player.pos[1])+"] ("+player.getCell().biome+")")
 
 def reset():
     global game,A,B,C
@@ -400,7 +419,7 @@ def reset():
 
     Patrick = Contestant("Patrick",skills = {"Stabbing":1})
     Sofia = Contestant("Sofia",skills = {"Stabbing":3},stats = {"Dexterity":3})
-    Oliver = Contestant("Oliver",skills = {"Stabbing":1},stats = {"Strength":1},inventory = [lightsaber])
+    Oliver = Contestant("Oliver",skills = {"Stabbing":1},stats = {"Strength":1},inventory = [])
     Luke = Contestant("Luke",skills = {"Shooting":2,"Unarmed":2})
     Kimbal = Contestant("Kimbal",stats={"Strength":4})
 
