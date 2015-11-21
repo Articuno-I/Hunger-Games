@@ -17,6 +17,7 @@ FONT_SIZE = 10
 
 verbose = True
 logging = True
+waiting = False
 pygame_installed = True and pygame_installed
 log = ""
 
@@ -57,8 +58,8 @@ class Contestant:
         self.pos = pos
         self.live = True
 
-        self.stats = {"Strength":2,"Dexterity":2}
-        self.skills = {"Survival":0,"Stabbing":0,"Bow":0,"Unarmed":0,"Shooting":0}
+        self.stats = {"Strength":2,"Dexterity":2,"Intelligence":2}
+        self.skills = {"Survival":0,"Melee":0,"Unarmed":0,"Shooting":0,"First Aid":0,"Throwing":0}
 
         self.wounds = 0
         self.wound_ticks = []
@@ -171,8 +172,8 @@ class Contestant:
         fStrength = self.skills["Unarmed"] + self.stats["Strength"]
         wChoice = None
         for weapon in self.getTagged("weapon"):
-            if self.skills[weapon.values["skill"]] + weapon.values["weaponStrength"] + self.stats[weapon.values["stat"]] + self.getCell().biome.get_bonus(weapon) >= fStrength:
-                fStrength = self.skills[weapon.values["skill"]] + weapon.values["weaponStrength"] + self.stats[weapon.values["stat"]] + self.getCell().biome.get_bonus(weapon)
+            if self.skills[weapon.getSkill(self)] + weapon.values["weaponStrength"] + self.stats[weapon.getStat(self)] + self.getCell().biome.get_bonus(weapon) >= fStrength:
+                fStrength = self.skills[weapon.getSkill(self)] + weapon.values["weaponStrength"] + self.stats[weapon.getStat(self)] + self.getCell().biome.get_bonus(weapon)
                 wChoice = weapon
         return(wChoice,fStrength)
 
@@ -193,8 +194,8 @@ class Contestant:
             hungerBonus += 1
 
         if weapon:
-            weaponStat = weapon.values["stat"]
-            weaponSkill = weapon.values["skill"]
+            weaponStat = weapon.getStat(self)
+            weaponSkill = weapon.getSkill(self)
             weaponStrength = weapon.values["weaponStrength"]
             biomeBonus = self.getCell().biome.get_bonus(weapon)
         else:
@@ -203,8 +204,8 @@ class Contestant:
             weaponStrength = 0
             biomeBonus = 0
         if otherWeapon:
-            otherWeaponStat = otherWeapon.values["stat"]
-            otherWeaponSkill = otherWeapon.values["skill"]
+            otherWeaponStat = otherWeapon.getStat(other)
+            otherWeaponSkill = otherWeapon.getSkill(other)
             otherWeaponStrength = otherWeapon.values["weaponStrength"]
             otherBiomeBonus = other.getCell().biome.get_bonus(otherWeapon)
         else:
@@ -279,6 +280,31 @@ class Item:
     def an(self):
         return({True:"an",False:"a"}[self.name[0] in "aeiouAEIOU"])
 
+    def getSkill(self,player):
+        if type(self.values["skill"]) == type("String!"):
+            return(self.values["skill"])
+        else:
+            maxvalue = 0
+            target = None
+            for i in range(len(self.values["skill"])):
+                if player.skills[self.values["skill"][i]] + player.stats[self.values["stat"][i]] > maxvalue:
+                    target = self.values["skill"][i]
+                    maxvalue = player.skills[self.values["skill"][i]] + player.stats[self.values["stat"][i]]
+            return(target)
+
+    def getStat(self,player):
+        if type(self.values["stat"]) == type("String!"):
+            return(self.values["stat"])
+        else:
+            maxvalue = 0
+            target = None
+            for i in range(len(self.values["stat"])):
+                if player.skills[self.values["skill"][i]] + player.stats[self.values["stat"][i]] > maxvalue:
+                    target = self.values["stat"][i]
+                    maxvalue = player.skills[self.values["skill"][i]] + player.stats[self.values["stat"][i]]
+            return(target)
+
+
 class Cell:
     def __init__(self,biome):
         self.players = []
@@ -350,18 +376,30 @@ class Biome:
                 bonus -= 1
         return(int(bonus+{True:0.5,False:-0.5}[bonus>0])) #rounds to nearest whole number; Python always rounds down, so int(0.9) = 0. Adding/subtracting 0.5 changes this to how we would like it to work.
 
-sharpStick = Item("Sharpened Stick",["melee","stabbing","weapon","flammable","crafted"],{"weaponStrength":1,"skill":"Stabbing","stat":"Strength"}) #weaponStrength is usually 1, 2 is good, 3 is insane.
-sword = Item("Sword",["melee","stabbing","weapon","flammable","slashing"],{"weaponStrength":2,"skill":"Stabbing","stat":"Dexterity"})
+sharpStick = Item("Sharpened Stick",["melee","stabbing","weapon","flammable","crafted"],{"weaponStrength":1,"skill":("Throwing","Melee"),"stat":("Dexterity","Strength")}) #weaponStrength is usually 1, 2 is good, 3 is insane.
+sword = Item("Sword",["melee","stabbing","weapon","flammable","slashing"],{"weaponStrength":2,"skill":"Melee","stat":"Dexterity"})
 handbow = Item("Hand-made Bow",["shooting","ranged","weapon","flammable","crafted"],{"weaponStrength":1,"skill":"Shooting","stat":"Dexterity"})
 photon = Item("Photon Blaster",["shooting","ranged","weapon"],{"weaponStrength":4,"skill":"Shooting","stat":"Dexterity"})
-lightsaber = Item("Lightsaber",["melee","stabbing","weapon","slashing"],{"weaponStrength":4,"skill":"Stabbing","stat":"Dexterity"})
+lightsaber = Item("Lightsaber",["melee","stabbing","weapon","slashing"],{"weaponStrength":4,"skill":"Melee","stat":"Dexterity"})
 berries = Item("Handful of Berries",["food","stackable"],{"nutrition":25})
 bird_meat = Item("Small Bird (Cooked)",["food","stackable","ranged_find_bonus"],{"nutrition":50})
+wellbow = Item("Well Made Bow",["shooting","ranged","weapon","flammable"],{"weaponStrength":2,"skill":"Shooting","stat":"Dexterity"})
+energybar = Item("Energy Bar",["food","stackable"],{"nutrition":40})
+mace = Item("Mace",["melee","weapon","bashing"],{"weaponStrength":2,"skill":"Melee","stat":"Strength"})
+bandage = Item("Bandage",["stackable","medical","crafted"],{"healstrength":1})
+firstaid = Item("First Aid Kit",["stackable","medical"],{"healstrength":2})
+throwknives = Item("Throwing Knives",["melee","ranged","weapon","throwing"],{"weaponStrength":1,"skill":"Throwing","stat":"Dexterity"})
+spear = Item("Spear",["melee","ranged","weapon","throwing"],{"weaponStrength":2,"skill":("Throwing","Melee"),"stat":("Dexterity","Strength")})
 
 cornucopiaTable = Table({
-sharpStick : 1000,
 sword : 500,
-handbow : 750,
+mace : 500,
+spear : 500,
+bandage : 500,
+throwknives : 500,
+wellbow : 500,
+firstaid : 750,
+energybar : 750,
 lightsaber : {True:999999,False:1}[mode == "spacewar"],
 photon : {True:999999,False:1}[mode == "spacewar"]
     })
@@ -371,21 +409,32 @@ photon : {True:999999,False:1}[mode == "spacewar"]
 woodsTable = Table({
 sharpStick : 100,
 sword : 30,
+mace : 30,
+energybar : 30,
+bandage : 50,
 handbow : 75,
 berries : 150,
+spear : 40,
+throwknives : 30,
 bird_meat : 150
     },1500)
 
 plainsTable = Table({
     sharpStick : 50,
     sword : 20,
+    mace : 20,
+    spear : 25,
+    throwknives : 20,
+    energybar : 20,
     handbow : 40,
     berries : 10,
+    bandage : 10,
     bird_meat : 200
     },1500)
 
 desertTable = Table({
-    bird_meat : 10
+    bird_meat : 10,
+    sharpStick : 10
     },1500)
 
 spaceTable = Table({
@@ -399,11 +448,15 @@ woodsDangers = Table({
     "beartrap" : 10
     },2000)
 
+desertDangers = Table ({
+    "mirage" : 20
+    },2000)
+
 #BIOMES                
 
 woods = Biome("woods",woodsTable,(36,119,0),weapon_boost = {"shooting":-0.5},dangers = woodsDangers)
 plains = Biome("plains",plainsTable,(187,255,157),weapon_boost = {"shooting":1})
-desert = Biome("desert",desertTable,(239,228,176))
+desert = Biome("desert",desertTable,(239,228,176),dangers = desertDangers)
 space = Biome("space",spaceTable,(0,0,50))
 
 biomes = [woods,plains,desert]
@@ -498,9 +551,30 @@ class Game(object):
                 player.wound_ticks[i] -= 1
                 if player.wound_ticks[i] == 0:
                     player.wounds -= 1
-                    printf(player.name + " managed to bandage up "+{True:"one of their injuries!",False:"their injury!"}[player.wounds>0])
+                    printf(player.name + " managed to recover from "+{True:"one of their injuries!",False:"their injury!"}[player.wounds>0])
             while 0 in player.wound_ticks:
                 player.wound_ticks.remove(0)
+            if player.wounds:
+                meds = player.getTagged("medical")
+                if meds:
+                    best = None
+                    besth = 0
+                    for med in meds:
+                        if abs(med.values["healstrength"]-player.wounds)<abs(besth-player.wounds):
+                            best = med
+                            besth = med.values["healstrength"]
+                    if best:
+                        player.inventory.remove(best)
+                        heals = min(best.values["healstrength"],player.wounds)
+                        printf(player.name + " attempts to use "+best.name+" to treat their wound"+{True:"s",False:""}[heals>=2]+".")
+                        if player.challenge("Intelligence","First Aid")>=2:
+                            printf(player.name+" is successful and treats "+str(heals) + " wound"+{True:"s",False:""}[heals>=2]+"!")
+                            for i in range(heals):
+                                player.wounds -= 1
+                                player.wound_ticks.remove(max(player.wound_ticks))
+                        else:
+                            printf(player.name + " is unsuccessful and wastes the "+best.name+".")
+                    
             if player.getCell().biome.dangers:
                 danger = player.getCell().biome.dangers.fish()
                 if danger == "beartrap":
@@ -510,6 +584,17 @@ class Game(object):
                         player.wound(2)
                     else:
                         printf(player.name + " narrowly evades catching their leg in a bear trap, "+{True:"jerking it out of the way at the last moment.",False:"spotting the trap just before they would have stepped on it."}[player.stats["Dexterity"]>player.skills["Survival"]])
+                elif danger == "mirage":
+                    difficulty = 1
+                    if player.hunger <= 20:
+                        difficulty += 2
+                    elif player.hunger <= 40:
+                        difficulty += 1
+                    if player.challenge("Intelligence","Survival") < difficulty:
+                        printf(player.name + " thinks that they can see something in the distance! They spend hours chasing after it before the mirage fades.")
+                        player.hunger -= random.randint(0,5+player.hunger/6)
+                    else:
+                        printf(player.name + " thinks that they can make out something in the distance, but after a moment blinks, shakes their head and can see nothing.")
 
 
             tries = 0
@@ -652,7 +737,7 @@ class Game(object):
 
         pygame.display.flip()
 
-        while 1:
+        while waiting:
             event = pygame.event.poll()
             if event.type == pygame.QUIT:
                 exit()
@@ -675,16 +760,16 @@ def reset():
     game.map = Map((15,15))
 
 
-    Patrick = Contestant("Patrick",skills = {"Stabbing":1})
-    Sofia = Contestant("Sofia",skills = {"Stabbing":5},stats = {"Dexterity":3})
-    Oliver = Contestant("Oliver",skills = {"Stabbing":1},stats = {"Strength":1},inventory = [])
+    Patrick = Contestant("Patrick",skills = {"Melee":1})
+    Sofia = Contestant("Sofia",skills = {"Melee":5},stats = {"Dexterity":3})
+    Oliver = Contestant("Oliver",skills = {"Melee":1},stats = {"Strength":1},inventory = [])
     Luke = Contestant("Luke",skills = {"Shooting":3,"Unarmed":2})
     Kimbal = Contestant("Kimbal",stats={"Strength":4})
     Phyllie = Contestant("Phyllie")
     Deborah = Contestant("Deborah")
     Chloe = Contestant("Chloe")
     Josh = Contestant("Josh")
-    Uhoh = Contestant("Katniss",skills = {"Shooting":5,"Survival":2,"Unarmed":1,"Stabbing":1},stats = {"Dexterity":3})
+    Uhoh = Contestant("Katniss",skills = {"Shooting":5,"Survival":2,"Unarmed":1,"Melee":1},stats = {"Dexterity":3})
 
     game.players = [Patrick,Sofia,Oliver,Luke,Kimbal,Phyllie,Deborah,Chloe,Josh,Uhoh]
 
