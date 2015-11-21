@@ -393,7 +393,7 @@ class Game(object):
                     
                 nDir = player.getDir(player.getNearest().pos)
                 #printf((player.name,player.pos,player.getNearest().name,player.getNearest().pos,(-player.pos[0]--player.getNearest().pos[0],-player.pos[1]--player.getNearest().pos[1]),nDir))
-                for i in range(int(self.turnSinceFight)):
+                for i in range(int(self.turnSinceFight) + len(player.kills):
                     if nDir in valid:
                         valid.append(nDir)
             #printf(valid)
