@@ -1,7 +1,17 @@
 import random,copy,sys
 
+try:
+    import pygame
+    import time
+    pygame_installed = True
+except:
+    pygame_installed = False
+
 KILL_DIFFICULTY = 5
 LETHAL_POPULATION = 3
+
+CELL_SIZE = 50
+FONT_SIZE = 10
 
 verbose = False
 
@@ -10,7 +20,7 @@ def printf(text):
         print(text)
 
 class Contestant:
-    def __init__(self,name,stats = None,skills = None,inventory = None, pos = (0,0)): #stats out of 4, 2 is average, skills out of 5, 0 is average.
+    def __init__(self,name,stats = None,skills = None,inventory = None, pos = "c"): #stats out of 4, 2 is average, skills out of 5, 0 is average.
         self.name = name
         self.stats = stats
         self.skills = skills
@@ -18,7 +28,6 @@ class Contestant:
         self.inventory = inventory
         self.pos = pos
         self.live = True
-        game.map.grid[self.pos[0]][self.pos[1]].players.append(self)
 
         self.stats = {"Strength":2,"Dexterity":2,"Intelligence":2}
         self.skills = {"Survival":0,"Stabbing":0,"Bow":0,"Unarmed":0,"Shooting":0}
@@ -34,6 +43,11 @@ class Contestant:
 
         if not inventory:
             self.inventory = []
+
+        if pos == "c":
+            self.pos = (game.map.dims[0]/2,game.map.dims[1]/2)
+            
+        game.map.grid[self.pos[0]][self.pos[1]].players.append(self)
 
     def challenge(self,stat,skill):
         total = {False:self.stats[stat],True:0}[stat == False] + {False:self.skills[skill],True:0}[skill == False]
@@ -64,8 +78,8 @@ class Contestant:
         for i in range(otherTotal):
             otherWins += {False:0,True:1}[random.randint(0,1) == 1]
 
-        printf((self.name,selfTotal,selfWins))
-        printf((other.name,otherTotal,otherWins))
+        #printf((self.name,selfTotal,selfWins))
+        #printf((other.name,otherTotal,otherWins))
             
         if selfWins > otherWins:
             victory = True
@@ -78,6 +92,33 @@ class Contestant:
 
     def getCell(self):
         return(game.map.grid[self.pos[0]][self.pos[1]])
+
+    def getDistance(self,other):
+        return(((self.pos[0]-other.pos[0])**2+(self.pos[1]-other.pos[1])**2)**0.5)
+
+    def getNearest(self):
+        distance = 99
+        target = False
+        for player in game.players:
+            if player != self:
+                tdistance = player.getDistance(self)
+                if tdistance<distance:
+                    target = player
+                    distance = tdistance
+        return(target)
+
+    def getDir(self,pos):
+        if abs(self.pos[0] - pos[0]) >= abs(self.pos[1] - pos[1]):
+            if self.pos[0] - pos[0] > 0:
+                return((-1,0))
+            elif self.pos[0] - pos[0] < 0:
+                return((1,0))
+        else:
+            if self.pos[1] - pos[1] > 0:
+                return((0,-1))
+            elif self.pos[1] - pos[1] < 0:
+                return((0,1))
+        return((0,0))
 
     def getTagged(self,tags):
         if type(tags) == type(""):
@@ -200,6 +241,9 @@ class Cell:
         self.players = []
         self.biome = biome
         self.lootTable = biome.table
+    def list_names(self):
+        return([player.name for player in self.players])
+            
 
 class Map:
     def __init__(self,dims):
@@ -233,9 +277,10 @@ class Table:
         return(None)
         
 class Biome:
-    def __init__(self,name,table,weapon_boost={},dangers = None):
+    def __init__(self,name,table,colour,weapon_boost={},dangers = None):
         self.name = name
         self.table = table
+        self.colour = colour
         self.weapon_boost = weapon_boost
         self.dangers = dangers
 
@@ -244,12 +289,15 @@ class Biome:
         for tag in weapon.tags:
             if tag in self.weapon_boost:
                 bonus += self.weapon_boost[tag]
+        if "ranged" in weapon.tags and not "melee" in weapon.tags:
+            if game.phase == "Night":
+                bonus -= 1
         return(int(bonus+{True:0.5,False:-0.5}[bonus>0])) #rounds to nearest whole number; Python always rounds down, so int(0.9) = 0. Adding/subtracting 0.5 changes this to how we would like it to work.
 
-sharpStick = Item("Sharpened Stick",["stabbing","weapon","flammable","crafted"],{"weaponStrength":1,"skill":"Stabbing","stat":"Strength"}) #weaponStrength is usually 1, 2 is good, 3 is insane.
-sword = Item("Sword",["stabbing","weapon","flammable","slashing"],{"weaponStrength":2,"skill":"Stabbing","stat":"Dexterity"})
+sharpStick = Item("Sharpened Stick",["melee","stabbing","weapon","flammable","crafted"],{"weaponStrength":1,"skill":"Stabbing","stat":"Strength"}) #weaponStrength is usually 1, 2 is good, 3 is insane.
+sword = Item("Sword",["melee","stabbing","weapon","flammable","slashing"],{"weaponStrength":2,"skill":"Stabbing","stat":"Dexterity"})
 handbow = Item("Hand-made Bow",["shooting","ranged","weapon","flammable","crafted"],{"weaponStrength":1,"skill":"Shooting","stat":"Dexterity"})
-lightsaber = Item("Lightsaber",["stabbing","weapon","slashing"],{"weaponStrength":4,"skill":"Stabbing","stat":"Dexterity"})
+lightsaber = Item("Lightsaber",["melee","stabbing","weapon","slashing"],{"weaponStrength":4,"skill":"Stabbing","stat":"Dexterity"})
 
 woodsTable = Table({
 sharpStick : 100,
@@ -275,8 +323,8 @@ woodsDangers = Table({
     },2000)
                 
 
-woods = Biome("woods",woodsTable,weapon_boost = {"shooting":-0.5},dangers = woodsDangers)
-plains = Biome("plains",plainsTable,weapon_boost = {"shooting":1})
+woods = Biome("woods",woodsTable,(36,119,0),weapon_boost = {"shooting":-0.5},dangers = woodsDangers)
+plains = Biome("plains",plainsTable,(187,255,157),weapon_boost = {"shooting":1})
 
 biomes = [woods,plains]
 
@@ -313,34 +361,52 @@ class Game(object):
             
         while len(self.players)>1:
             self.turn += 1
-            printf("Turn: "+str(self.turn))
-            self.printf_pos()
-            printf(" ")
+            self.phase = {"Start":"Dawn","Dawn":"Afternoon","Afternoon":"Dusk","Dusk":"Night","Night":"Dawn"}[self.phase]
+            if self.phase == "Dawn":
+                self.day += 1
+            printf("Day: "+str(self.day) + " ("+self.phase+")")
             self.tick()
-            printf(" ")
-            self.printf_pos()
             printf("~~~~~~~~")
             if pause:   raw_input()
         return(self.players[0])
 
     def tick(self):
+        if pygame_installed:
+            self.draw_tick()
         self.move_tick()
+        self.printf_pos()
         self.action_tick()
         self.combat_tick()
 
     def move_tick(self):
-        valid = []
         for player in self.players:
-            for vec in ((0,0),(1,0),(-1,0),(0,1),(0,-1)):
+            valid = []
+            for vec in ((1,0),(-1,0),(0,1),(0,-1)):
                 if game.map.is_valid((player.pos[0]+vec[0],player.pos[1]+vec[1])):
                     valid.append(vec)
-            player.move(random.choice(valid))
+                    
+                nDir = player.getDir(player.getNearest().pos)
+                #printf((player.name,player.pos,player.getNearest().name,player.getNearest().pos,(-player.pos[0]--player.getNearest().pos[0],-player.pos[1]--player.getNearest().pos[1]),nDir))
+                for i in range(int(self.turnSinceFight)):
+                    if nDir in valid:
+                        valid.append(nDir)
+            #printf(valid)
+            selected = random.choice(valid)
+            #printf(selected)
+            player.move(selected)
 
         playerlist = copy.copy(self.players)
-        if self.turnSinceFight >= 2 and len(self.players)>=2:
-            P1 = random.choice(playerlist)
-            playerlist.remove(P1)
-            P2 = random.choice(playerlist)
+        if self.turnSinceFight >= 12 and len(self.players)>=2:
+            distance = 999
+            pair = ()
+            for player in playerlist:
+                for other in playerlist:
+                    if other != player:
+                        if player.getDistance(other) < distance:
+                            pair = (player,other)
+                            distance = ((player.pos[0]-other.pos[0])**2 + (player.pos[1]-other.pos[1])**2)**0.5
+            P1 = pair[0]
+            P2 = pair[1]
             P1.setpos(P2.pos)
             printf("The gamemakers force "+P1.name+" to "+P2.name+"'"+{True:"",False:"s"}[P2.name[-1] == "s"] + " position!")
 
@@ -438,6 +504,45 @@ class Game(object):
         for player in self.players:
             printf(player.name+": ["+str(player.pos[0])+","+str(player.pos[1])+"] ("+player.getCell().biome.name+")")
 
+    def draw_map(self):
+        biomeSurf = pygame.surface.Surface((CELL_SIZE,CELL_SIZE))
+        mapSurf = pygame.surface.Surface((biomeSurf.get_width() * self.map.dims[0],biomeSurf.get_height() * self.map.dims[1]))
+        for x in range(self.map.dims[0]):
+            for y in range(self.map.dims[1]):
+                biomeSurf.fill(self.map.grid[x][y].biome.colour)
+
+                names = self.map.grid[x][y].list_names()
+                if names:
+                    for i in range(len(names)):
+                        name = names[i]
+                        firstPass = Calibri.render(name,1,(0,0,0))
+                        secondPass = pygame.transform.scale(firstPass,(CELL_SIZE,CELL_SIZE/len(names)))
+                        biomeSurf.blit(secondPass,(0,i*CELL_SIZE/len(names)))
+                
+                mapSurf.blit(biomeSurf,(x*biomeSurf.get_width(),y*biomeSurf.get_height()))
+        return(mapSurf)
+
+    def draw_tick(self):
+        screen.fill((0,0,0))
+        drawn_map = self.draw_map()
+        if self.phase == "Night":
+            drawn_map.blit(night_veil,(0,0))
+        elif self.phase in ("Dawn","Dusk"):
+            drawn_map.blit(dawn_veil,(0,0))
+        screen.blit(drawn_map,(0,0))
+
+        pygame.display.flip()
+
+        while 1:
+            event = pygame.event.poll()
+            if event.type == pygame.QUIT:
+                exit()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    break
+
+            time.sleep(0.05)
+
 def reset():
     global game,A,B,C
     game = Game()
@@ -445,8 +550,10 @@ def reset():
     game.players = []
     game.fallen = []
     game.turn = 0
+    game.day = 0
+    game.phase = "Start"
     game.turnSinceFight = 0
-    game.map = Map((5,5))
+    game.map = Map((15,15))
 
 
     Patrick = Contestant("Patrick",skills = {"Stabbing":1})
@@ -465,12 +572,30 @@ reset()
 
 verbose = True
 
+if pygame_installed:
+    pygame.init()
+    Calibri = pygame.font.SysFont("Calibri",FONT_SIZE)
+    drawnmap = game.draw_map()
+    screen = pygame.display.set_mode(drawnmap.get_size()) #welcome2
+
+    night_veil = pygame.surface.Surface(drawnmap.get_size())
+    night_veil.fill((0,0,120))
+    night_veil.set_alpha(100)
+
+    dawn_veil = pygame.surface.Surface(drawnmap.get_size())
+    dawn_veil.fill((120,95,0))
+    dawn_veil.set_alpha(50)
+        
+    pygame.image.save(drawnmap,"map.png")
+
 game.main()
 
 printf("/////////////////////////")
 printf("Victor:     "+game.players[0].name)
 printf("Inventory:  "+", ".join([i.name for i in game.players[0].inventory]))
 printf("Kills:      "+str(len(game.players[0].kills)) + " (" + ", ".join([i.name for i in game.players[0].kills]) + ")")
+
+game.draw_tick()
 
 def test(n):
     reset()
