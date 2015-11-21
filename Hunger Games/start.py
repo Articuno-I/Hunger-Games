@@ -1,7 +1,7 @@
 import random,copy,sys,math
 
 try:
-    import pygameu
+    import pygame
     import time
     pygame_installed = True
 except:
@@ -13,9 +13,20 @@ LETHAL_POPULATION = 3
 CELL_SIZE = 50
 FONT_SIZE = 10
 
-verbose = False
+verbose = True
+logging = True
+log = ""
 
 def printf(text):
+    if logging:
+        global log
+        log += text
+        log += "\n"
+        
+        logfile = open("log.txt","w")
+        logfile.write(log)
+        logfile.close()
+
     if verbose:
         print(text)
 
@@ -279,6 +290,11 @@ class Map:
         self.dims = dims
         self.cells = []
         self.grid =  [[Cell(random.choice(biomes)) for i in range(dims[1])] for i in range(dims[0])]
+        
+        #for x in range(4,11):
+        #    for y in range(4,11):
+        #        self.grid[x][y] = Cell(desert)
+
         for x in self.grid:
             for y in x:
                 self.cells.append(y)
@@ -348,7 +364,7 @@ lightsaber : 1
 
 woodsTable = Table({
 sharpStick : 100,
-sword : 50,
+sword : 30,
 handbow : 75,
 berries : 150,
 bird_meat : 150
@@ -504,7 +520,7 @@ class Game(object):
                     printf(player.name + " eats " + player.getTagged("food")[0].name + ".")
                     player.hunger += player.getTagged("food")[0].values["nutrition"]
                     player.inventory.remove(player.getTagged("food")[0])
-            elif player.hunger <= 0:
+            elif player.hunger <= 0 and len(game.players)>2:
                 printf(player.name + " starved to death!")
                 player.kill()
             elif player.hunger <= 20:
@@ -654,8 +670,6 @@ def reset():
     game.players = [Patrick,Sofia,Oliver,Luke,Kimbal,Phyllie,Deborah,Chloe,Josh]
 
 reset()
-
-verbose = True
 
 if pygame_installed:
     pygame.init()

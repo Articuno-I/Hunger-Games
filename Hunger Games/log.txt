@@ -1,0 +1,183 @@
+Cornucopia results:
+Luke and Sofia both spot a Sharpened Stick and make a grab for it. There is a brief grapple, but Sofia emerges victorious! Luke slinks away, defeated.
+Josh and Phyllie both spot a Hand-made Bow and make a grab for it. There is a brief grapple, but Phyllie emerges victorious! Josh slinks away, defeated.
+Oliver and Chloe both spot a Sharpened Stick and make a grab for it. There is a brief grapple, but Chloe emerges victorious! Oliver slinks away, defeated.
+Patrick and Deborah both spot a Sharpened Stick and make a grab for it. There is a brief grapple, but Deborah emerges victorious! Patrick slinks away, defeated.
+Kimbal decides that discretion is the better part of valour and runs away.
+Day: 1 (Dawn)
+Patrick: [8,7] (plains) HNG: 100
+Sofia: [7,8] (woods) HNG: 100
+Oliver: [8,7] (plains) HNG: 100
+Luke: [7,6] (plains) HNG: 100
+Kimbal: [7,8] (woods) HNG: 100
+Phyllie: [7,8] (woods) HNG: 100
+Deborah: [7,8] (woods) HNG: 100
+Chloe: [8,7] (plains) HNG: 100
+Josh: [7,8] (woods) HNG: 100
+Kimbal made a Sharpened Stick!
+Deborah found a Handful of Berries!
+Phyllie defeats Josh.
+Josh manages to escape, but sustains a wound from Phyllie's Hand-made Bow
+Kimbal defeats Deborah.
+Deborah escapes unharmed.
+Chloe defeats Oliver.
+Oliver escapes unharmed.
+~~~~~~~~
+Day: 1 (Afternoon)
+Patrick: [7,7] (desert) HNG: 100
+Sofia: [8,8] (desert) HNG: 86
+Oliver: [8,6] (desert) HNG: 95
+Luke: [6,6] (woods) HNG: 93
+Kimbal: [8,8] (desert) HNG: 86
+Phyllie: [6,8] (woods) HNG: 86
+Deborah: [6,8] (woods) HNG: 90
+Chloe: [7,7] (desert) HNG: 82
+Josh: [7,9] (desert) HNG: 85
+Luke made a Sharpened Stick!
+Deborah defeats Phyllie.
+Phyllie manages to escape, but sustains a nasty wound from Deborah's Sharpened Stick!
+Patrick defeats Chloe.
+Chloe manages to escape, but sustains a wound from Patrick's assault
+Sofia defeats Kimbal.
+Kimbal manages to escape, but sustains a nasty wound from Sofia's Sharpened Stick!
+~~~~~~~~
+Day: 1 (Dusk)
+Patrick: [7,6] (plains) HNG: 93
+Sofia: [7,8] (woods) HNG: 67
+Oliver: [7,6] (plains) HNG: 81
+Luke: [5,6] (plains) HNG: 74
+Kimbal: [7,8] (woods) HNG: 80
+Phyllie: [7,8] (woods) HNG: 70
+Deborah: [6,9] (plains) HNG: 77
+Chloe: [7,6] (plains) HNG: 69
+Josh: [7,10] (woods) HNG: 78
+Phyllie found a Small Bird (Cooked)!
+Sofia found a Handful of Berries!
+Chloe defeats Patrick.
+Patrick manages to escape, but sustains a wound from Chloe's Sharpened Stick
+Sofia defeats Kimbal.
+Kimbal manages to escape, but sustains a nasty wound from Sofia's Sharpened Stick!
+~~~~~~~~
+Day: 1 (Night)
+Patrick: [7,7] (desert) HNG: 73
+Sofia: [6,8] (woods) HNG: 54
+Oliver: [6,6] (woods) HNG: 80
+Luke: [6,6] (woods) HNG: 70
+Kimbal: [6,8] (woods) HNG: 67
+Phyllie: [7,7] (desert) HNG: 57
+Deborah: [5,9] (desert) HNG: 76
+Chloe: [8,6] (desert) HNG: 64
+Josh: [7,11] (woods) HNG: 69
+Oliver made a Hand-made Bow!
+Luke defeats Oliver.
+Oliver manages to escape, but sustains a wound from Luke's battery
+Sofia defeats Kimbal.
+Sofia IMPALES Kimbal with a powerful thrust of their Sharpened Stick!
+Sofia tries to loot Kimbal, but cannot find anything valuable.
+Patrick defeats Phyllie.
+Phyllie manages to escape, but sustains a nasty wound from Patrick's bludgeoning!
+~~~~~~~~
+Day: 2 (Dawn)
+Patrick: [6,7] (desert) HNG: 67
+Sofia: [5,8] (woods) HNG: 50
+Oliver: [6,5] (desert) HNG: 71
+Luke: [6,7] (desert) HNG: 66
+Phyllie: [8,7] (plains) HNG: 53
+Deborah: [5,8] (woods) HNG: 59
+Chloe: [7,6] (plains) HNG: 55
+Josh: [6,11] (woods) HNG: 56
+Josh found a Small Bird (Cooked)!
+Sofia eats Handful of Berries.
+Phyllie found a Small Bird (Cooked)!
+Sofia defeats Deborah.
+Deborah manages to escape, but sustains a nasty wound from Sofia's Sharpened Stick!
+Patrick defeats Luke.
+Patrick loots a Sharpened Stick,  from Luke.
+~~~~~~~~
+Day: 2 (Afternoon)
+Patrick: [7,7] (desert) HNG: 60
+Sofia: [5,7] (plains) HNG: 63
+Oliver: [6,6] (woods) HNG: 66
+Luke: [5,7] (plains) HNG: 59
+Phyllie: [8,6] (desert) HNG: 44
+Deborah: [5,7] (plains) HNG: 47
+Chloe: [6,6] (woods) HNG: 44
+Josh: [6,12] (plains) HNG: 48
+Deborah eats Handful of Berries.
+Chloe is hungry, but has nothing to eat!
+Phyllie eats Small Bird (Cooked).
+Sofia defeats Deborah.
+Sofia IMPALES Deborah with a powerful thrust of their Sharpened Stick!
+Sofia tries to loot Deborah, but cannot find anything valuable.
+Oliver defeats Chloe.
+Chloe escapes unharmed.
+~~~~~~~~
+Day: 2 (Dusk)
+Patrick: [6,7] (desert) HNG: 57
+Sofia: [5,8] (woods) HNG: 57
+Oliver: [7,6] (plains) HNG: 61
+Luke: [6,7] (desert) HNG: 49
+Phyllie: [8,7] (plains) HNG: 85
+Chloe: [6,5] (desert) HNG: 32
+Josh: [5,12] (woods) HNG: 43
+Sofia found a Handful of Berries!
+Josh found a Handful of Berries!
+Josh eats Small Bird (Cooked).
+Phyllie found a Small Bird (Cooked)!
+Chloe is hungry, but has nothing to eat!
+Oliver found a Small Bird (Cooked)!
+Luke defeats Patrick.
+Patrick manages to escape, but sustains a nasty wound from Luke's bludgeoning!
+~~~~~~~~
+Day: 2 (Night)
+Patrick: [6,6] (woods) HNG: 44
+Sofia: [5,7] (plains) HNG: 54
+Oliver: [7,5] (woods) HNG: 53
+Luke: [6,6] (woods) HNG: 43
+Phyllie: [9,7] (plains) HNG: 71
+Chloe: [6,4] (woods) HNG: 29
+Josh: [5,13] (woods) HNG: 87
+Chloe is hungry, but has nothing to eat!
+Patrick is hungry, but has nothing to eat!
+Josh made a Sharpened Stick!
+Luke is hungry, but has nothing to eat!
+Patrick defeats Luke.
+Luke escapes unharmed.
+~~~~~~~~
+Day: 3 (Dawn)
+Patrick: [6,5] (desert) HNG: 34
+Sofia: [6,7] (desert) HNG: 48
+Oliver: [8,5] (woods) HNG: 44
+Luke: [6,7] (desert) HNG: 36
+Phyllie: [9,8] (plains) HNG: 64
+Chloe: [7,4] (desert) HNG: 27
+Josh: [6,13] (woods) HNG: 81
+Luke is hungry, but has nothing to eat!
+Patrick is hungry, but has nothing to eat!
+Chloe is starving!
+Oliver eats Small Bird (Cooked).
+Phyllie managed to bandage up one of their injuries!
+Sofia defeats Luke.
+Luke manages to escape, but sustains a nasty wound from Sofia's Sharpened Stick!
+~~~~~~~~
+Day: 3 (Afternoon)
+Patrick: [7,5] (woods) HNG: 30
+Sofia: [7,7] (desert) HNG: 47
+Oliver: [9,5] (desert) HNG: 90
+Luke: [6,8] (woods) HNG: 32
+Phyllie: [9,9] (woods) HNG: 56
+Chloe: [6,4] (woods) HNG: 18
+Josh: [6,14] (woods) HNG: 65
+Sofia eats Handful of Berries.
+Josh managed to bandage up their injury!
+Luke found a Handful of Berries!
+Luke eats Handful of Berries.
+Phyllie managed to bandage up one of their injuries!
+Phyllie managed to bandage up one of their injuries!
+Phyllie found a Small Bird (Cooked)!
+Chloe managed to bandage up their injury!
+Chloe is starving!
+Patrick found a Handful of Berries!
+Patrick eats Handful of Berries.
+~~~~~~~~
+Day: 3 (Dusk)
