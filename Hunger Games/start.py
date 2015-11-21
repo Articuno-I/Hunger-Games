@@ -13,11 +13,11 @@ KILL_DIFFICULTY = 5
 LETHAL_POPULATION = 3
 
 CELL_SIZE = 50
-FONT_SIZE = 10
+FONT_SIZE = 50
 
 verbose = True
 logging = True
-waiting = False
+waiting = True
 pygame_installed = True and pygame_installed
 log = ""
 
@@ -59,7 +59,7 @@ class Contestant:
         self.live = True
 
         self.stats = {"Strength":2,"Dexterity":2,"Intelligence":2}
-        self.skills = {"Survival":0,"Melee":0,"Unarmed":0,"Shooting":0,"First Aid":0,"Throwing":0}
+        self.skills = {"Survival":0,"Melee":0,"Unarmed":0,"Shooting":0,"First Aid":0,"Throwing":0,"Explosives":0}
 
         self.wounds = 0
         self.wound_ticks = []
@@ -198,6 +198,13 @@ class Contestant:
             weaponSkill = weapon.getSkill(self)
             weaponStrength = weapon.values["weaponStrength"]
             biomeBonus = self.getCell().biome.get_bonus(weapon)
+            if "durability" in weapon.values:
+                if random.randint(0,100)>weapon.values["durability"]:
+                    self.inventory.remove(weapon)
+                    printf(self.name+"'s "+weapon.name+" breaks!")
+            elif "consumable" in weapon.tags:
+                self.inventory.remove(weapon)
+                printf(self.name + " uses their "+weapon.name+".")
         else:
             weaponStat = "Strength"
             weaponSkill = "Unarmed"
@@ -376,9 +383,9 @@ class Biome:
                 bonus -= 1
         return(int(bonus+{True:0.5,False:-0.5}[bonus>0])) #rounds to nearest whole number; Python always rounds down, so int(0.9) = 0. Adding/subtracting 0.5 changes this to how we would like it to work.
 
-sharpStick = Item("Sharpened Stick",["melee","stabbing","weapon","flammable","crafted"],{"weaponStrength":1,"skill":("Throwing","Melee"),"stat":("Dexterity","Strength")}) #weaponStrength is usually 1, 2 is good, 3 is insane.
+sharpStick = Item("Sharpened Stick",["melee","stabbing","weapon","flammable","crafted"],{"weaponStrength":0,"skill":("Throwing","Melee"),"stat":("Dexterity","Strength"),"durability":80}) #weaponStrength is usually 1, 2 is good, 3 is insane.
 sword = Item("Sword",["melee","stabbing","weapon","flammable","slashing"],{"weaponStrength":2,"skill":"Melee","stat":"Dexterity"})
-handbow = Item("Hand-made Bow",["shooting","ranged","weapon","flammable","crafted"],{"weaponStrength":1,"skill":"Shooting","stat":"Dexterity"})
+handbow = Item("Hand-made Bow",["shooting","ranged","weapon","flammable","crafted"],{"weaponStrength":1,"skill":"Shooting","stat":"Dexterity","durability":80})
 photon = Item("Photon Blaster",["shooting","ranged","weapon"],{"weaponStrength":4,"skill":"Shooting","stat":"Dexterity"})
 lightsaber = Item("Lightsaber",["melee","stabbing","weapon","slashing"],{"weaponStrength":4,"skill":"Melee","stat":"Dexterity"})
 berries = Item("Handful of Berries",["food","stackable"],{"nutrition":25})
@@ -390,12 +397,14 @@ bandage = Item("Bandage",["stackable","medical","crafted"],{"healstrength":1})
 firstaid = Item("First Aid Kit",["stackable","medical"],{"healstrength":2})
 throwknives = Item("Throwing Knives",["melee","ranged","weapon","throwing"],{"weaponStrength":1,"skill":"Throwing","stat":"Dexterity"})
 spear = Item("Spear",["melee","ranged","weapon","throwing"],{"weaponStrength":2,"skill":("Throwing","Melee"),"stat":("Dexterity","Strength")})
+dynamite = Item("Dynamite",["explosive","weapon","consumable"],{"weaponStrength":6,"skill":"Explosives","stat":"Intelligence"})
 
 cornucopiaTable = Table({
 sword : 500,
 mace : 500,
 spear : 500,
 bandage : 500,
+dynamite : 250,
 throwknives : 500,
 wellbow : 500,
 firstaid : 750,
@@ -434,7 +443,8 @@ plainsTable = Table({
 
 desertTable = Table({
     bird_meat : 10,
-    sharpStick : 10
+    sharpStick : 10,
+    dynamite : 100
     },1500)
 
 spaceTable = Table({
@@ -640,14 +650,18 @@ class Game(object):
                     P2 = random.choice(playerList)
                     playerList.remove(P2)
 
+                    weapon1 = P1.getWeapon()[0]
+                    weapon2 = P2.getWeapon()[0]
                     result = P1.fight(P2)
                     victory = result[1]
                     extent = abs(result[0])
                     if victory:
                         victor = P1
+                        weapon = weapon1
                         loser = P2
                     else:
                         victor = P2
+                        weapon = weapon2
                         loser = P1
                     printf(victor.name + " defeats "+ loser.name + ".")
                     fight = True
@@ -655,9 +669,8 @@ class Game(object):
                         
                     if extent + loser.wounds >= KILL_DIFFICULTY or len(game.players) <= LETHAL_POPULATION:
                         outcome = "kill"
-                        weapon = victor.getWeapon()[0]
                         if weapon:
-                            weapText = victor.getWeapon()[0].an() + " " + victor.getWeapon()[0].name
+                            weapText = weapon.an() + " " + weapon.name
                         else:
                             weapText = "their bare hands"
                             
@@ -666,6 +679,8 @@ class Game(object):
                                 printf(victor.name + " DECAPITATES " + loser.name + " with a fell swoop of their "+weapon.name + "!")
                             elif "stabbing" in weapon.tags:
                                 printf(victor.name + " IMPALES " + loser.name + " with a powerful thrust of their " + weapon.name + "!")
+                            elif "explosive" in weapon.tags:
+                                printf(victor.name + " VAPORIZES " + loser.name + " with their "+weapon.name +"!")
                             else:
                                 printf(victor.name+" kills "+loser.name+" with "+weapText+"!")
                                 
@@ -677,10 +692,10 @@ class Game(object):
                     elif extent >= 2:
                         outcome = "nastywound"
                         loser.wound(2)
-                        if victor.getWeapon()[0]:
-                            weapText = victor.getWeapon()[0].name
+                        if weapon:
+                            weapText = weapon.name
                         else:
-                            weapText = random.choice(["battery","bludgeoning","assault"])
+                            weapText = random.choice(["bludgeoning","assault"])
                         printf(loser.name+" manages to escape, but sustains a nasty wound from "+victor.name+"'s "+weapText + "!")
                         
                     elif extent >= 1 and loser.inventory and random.randint(0,2):
@@ -689,8 +704,8 @@ class Game(object):
                     elif extent >= 1:
                         outcome = "wound"
                         loser.wound(1)
-                        if victor.getWeapon()[0]:
-                            weapText = victor.getWeapon()[0].name
+                        if weapon:
+                            weapText = weapon.name
                         else:
                             weapText = random.choice(["battery","bludgeoning","assault"])
                         printf(loser.name+" manages to escape, but sustains a wound from "+victor.name+"'s "+weapText)
@@ -760,12 +775,12 @@ def reset():
     game.map = Map((15,15))
 
 
-    Patrick = Contestant("Patrick",skills = {"Melee":1})
+    Patrick = Contestant("Patrick",stats = {"Intelligence":3},skills = {"Melee":1})
     Sofia = Contestant("Sofia",skills = {"Melee":5},stats = {"Dexterity":3})
-    Oliver = Contestant("Oliver",skills = {"Melee":1},stats = {"Strength":1},inventory = [])
-    Luke = Contestant("Luke",skills = {"Shooting":3,"Unarmed":2})
-    Kimbal = Contestant("Kimbal",stats={"Strength":4})
-    Phyllie = Contestant("Phyllie")
+    Oliver = Contestant("Oliver",skills = {"Melee":1},stats = {"Strength":1,"Intelligence":3},inventory = [])
+    Luke = Contestant("Luke",skills = {"Shooting":3,"Unarmed":2,"Intelligence":3})
+    Kimbal = Contestant("Kimbal",stats={"Strength":4,"Intelligence":3})
+    Phyllie = Contestant("Phyllie",stats = {"Intelligence":3})
     Deborah = Contestant("Deborah")
     Chloe = Contestant("Chloe")
     Josh = Contestant("Josh")
@@ -813,3 +828,7 @@ def test(n):
         wins[game.players[0].name] += 1
         turns.append(game.turn)
     return(wins,sum(turns)/float(n))
+
+while not "Dynamite" in log:
+    reset()
+    game.main()
