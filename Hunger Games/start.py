@@ -15,6 +15,8 @@ LETHAL_POPULATION = 3
 CELL_SIZE = 50
 FONT_SIZE = 50
 
+MUT_CHANCE = 30 #out of 100
+
 verbose = True
 logging = True
 waiting = True
@@ -311,19 +313,53 @@ class Item:
 
 
 class Cell:
-    def __init__(self,biome):
+    def __init__(self,pos,biome = None):
         self.players = []
         self.biome = biome
-        self.lootTable = biome.table
+        self.pos = pos
+        
+        if biome:
+            self.lootTable = biome.table
+            
     def list_names(self):
         return([player.name for player in self.players])
+
+    def generate(self):
+        
+        if self.biome:
+            pass
+        else:
+            surrounding = []
+            for d in ((-1,0),(1,0),(0,1),(0,-1)):
+                try:
+                    if game.map.grid[self.pos[0]+d[0]][self.pos[1]+d[1]].biome:
+                        surrounding.append(game.map.grid[self.pos[0]+d[0]][self.pos[1]+d[1]].biome)
+                except:
+                    pass
+            if (not surrounding) or random.randint(0,100)<MUT_CHANCE:
+                self.biome = random.choice(biomes)
+                self.lootTable = self.biome.table
+            else:
+                self.biome = random.choice(surrounding)
+                self.lootTable = self.biome.table
+
+        for d in ((-1,0),(1,0),(0,1),(0,-1)):
+            try:
+                if not game.map.grid[self.pos[0]+d[0]][self.pos[1]+d[1]].biome:
+                    game.map.grid[self.pos[0]+d[0]][self.pos[1]+d[1]].generate()
+            except:
+                pass
             
 
 class Map:
     def __init__(self,dims):
         self.dims = dims
         self.cells = []
-        self.grid =  [[Cell(random.choice(biomes)) for i in range(dims[1])] for i in range(dims[0])]
+        #self.grid =  [[Cell(random.choice(biomes)) for i in range(dims[1])] for i in range(dims[0])]
+        self.grid =  [[Cell((x,y)) for y in range(dims[1])] for x in range(dims[0])]
+        self.grid[dims[0]/2][dims[1]/2].biome = woods
+        self.grid[dims[0]/2][dims[1]/2].lootTable = woods.table
+        
 
         # Uncomment below for 'Desert Hell Mode'
         #for x in range(4,11):
@@ -338,6 +374,9 @@ class Map:
         if pos[0]<self.dims[0] and pos[1]<self.dims[1] and pos[0]>=0 and pos[1]>=0:
             return(True)
         return(False)
+
+    def generate(self):
+        self.grid[self.dims[0]/2][self.dims[1]/2].generate()
 
 class Table:
     def __init__(self,contents,bigN=0):
@@ -771,6 +810,7 @@ def reset():
     game.phase = "Start"
     game.turnSinceFight = 0
     game.map = Map((15,15))
+    game.map.generate()
 
 
     Patrick = Contestant("Patrick",stats = {"Intelligence":3},skills = {"Melee":1})
