@@ -1,7 +1,7 @@
-import random,copy,sys
+import random,copy,sys,math
 
 try:
-    import pygame
+    import pygameu
     import time
     pygame_installed = True
 except:
@@ -19,6 +19,20 @@ def printf(text):
     if verbose:
         print(text)
 
+def displayItemList(items):
+    lst = [item.an() + " "+item.name for item in items]
+    lst2 = {}
+    for i in lst:
+        if not i in lst2:
+            lst2[i]=1
+        else:
+            lst2[i] += 1
+    st = ""
+    for i in lst2:
+        st += i + {True:" (x"+str(lst2[i])+")",False:""}[lst2[i]>1]
+        st += ", "
+    return(st)
+
 class Contestant:
     def __init__(self,name,stats = None,skills = None,inventory = None, pos = "c"): #stats out of 4, 2 is average, skills out of 5, 0 is average.
         self.name = name
@@ -34,6 +48,8 @@ class Contestant:
 
         self.wounds = 0
         self.wound_ticks = []
+
+        self.hunger = 100
 
         if stats:
             for stat in stats:
@@ -68,7 +84,10 @@ class Contestant:
 
         selfTotal += advantage
         otherTotal += otheradvantage
-            
+
+        selfTotal = max(0,selfTotal)
+        otherTotal = max(0,otherTotal)
+        
         selfWins = 0
 
         otherWins = 0
@@ -147,6 +166,18 @@ class Contestant:
         weapon, weapBonus = self.getWeapon()
         otherWeapon, otherWeapBonus = other.getWeapon()
 
+        hungerBonus, otherHungerBonus = 0,0
+
+        if self.hunger <=20:
+            otherHungerBonus += 2
+        elif self.hunger <= 40:
+            otherHungerBonus += 1
+
+        if other.hunger <= 20:
+            hungerBonus += 2
+        elif other.hunger <= 40:
+            hungerBonus += 1
+
         if weapon:
             weaponStat = weapon.values["stat"]
             weaponSkill = weapon.values["skill"]
@@ -168,7 +199,7 @@ class Contestant:
             otherWeaponStrength = 0
             otherBiomeBonus = 0
         
-        return(self.compete(other,weaponStat,weaponSkill,otherWeaponStat,otherWeaponSkill,weaponStrength+other.wounds+biomeBonus,otherWeaponStrength+self.wounds+otherBiomeBonus))
+        return(self.compete(other,weaponStat,weaponSkill,otherWeaponStat,otherWeaponSkill,weaponStrength+other.wounds+biomeBonus-otherHungerBonus,otherWeaponStrength+self.wounds+otherBiomeBonus-hungerBonus))
 
     def wound(self,number):
         for i in range(number):
@@ -214,15 +245,7 @@ class Contestant:
                     discarded.append(item)
                 
         if stolen:
-            lst = [item.an() + " "+item.name for item in stolen]
-            st = ""
-            for i in range(len(lst)-1):
-                st += lst[i]
-                st += ", "
-            if len(lst)>1:
-                st += ("and ")
-            st += lst[-1]
-            printf(self.name + " loots " + st +" from "+other.name+".")
+            printf(self.name + " loots " + displayItemList(stolen) +" from "+other.name+".")
 
         else:
             printf(self.name + " tries to loot " + other.name + ", but cannot find anything valuable.")
@@ -274,13 +297,20 @@ class Table:
         self.intervals = [sum(float(item) for item in self.weights[0:n+1]) for n in range(len(self.weights))]
         if bigN == 0:
             bigN = self.total
+        self.bigN = bigN
         self.intervals.append(bigN)
+        
     def fish(self):
         target = random.randint(1,self.intervals[-1])
         for i in range(len(self.intervals)-1):
             if self.intervals[i] >= target:
                 return(self.items[i])
         return(None)
+
+    def update(self,item,odds):
+        ncontents = copy.copy(self.contents)
+        ncontents[item] = odds
+        return(Table(ncontents,self.bigN))
         
 class Biome:
     def __init__(self,name,table,colour,weapon_boost={},dangers = None):
@@ -304,18 +334,8 @@ sharpStick = Item("Sharpened Stick",["melee","stabbing","weapon","flammable","cr
 sword = Item("Sword",["melee","stabbing","weapon","flammable","slashing"],{"weaponStrength":2,"skill":"Stabbing","stat":"Dexterity"})
 handbow = Item("Hand-made Bow",["shooting","ranged","weapon","flammable","crafted"],{"weaponStrength":1,"skill":"Shooting","stat":"Dexterity"})
 lightsaber = Item("Lightsaber",["melee","stabbing","weapon","slashing"],{"weaponStrength":4,"skill":"Stabbing","stat":"Dexterity"})
-
-woodsTable = Table({
-sharpStick : 100,
-sword : 50,
-handbow : 75
-    },1500)
-
-plainsTable = Table({
-    sharpStick : 50,
-    sword : 20,
-    handbow : 40
-    },1500)
+berries = Item("Handful of Berries",["food","stackable"],{"nutrition":25})
+bird_meat = Item("Small Bird (Cooked)",["food","stackable","ranged_find_bonus"],{"nutrition":50})
 
 cornucopiaTable = Table({
 sharpStick : 1000,
@@ -324,15 +344,41 @@ handbow : 750,
 lightsaber : 1
     })
 
+#BIOME LOOT TABLES
+
+woodsTable = Table({
+sharpStick : 100,
+sword : 50,
+handbow : 75,
+berries : 150,
+bird_meat : 150
+    },1500)
+
+plainsTable = Table({
+    sharpStick : 50,
+    sword : 20,
+    handbow : 40,
+    berries : 10,
+    bird_meat : 200
+    },1500)
+
+desertTable = Table({
+    bird_meat : 10
+    },1500)
+
+#BIOME DANGER TABLES
+
 woodsDangers = Table({
     "beartrap" : 10
     },2000)
-                
+
+#BIOMES                
 
 woods = Biome("woods",woodsTable,(36,119,0),weapon_boost = {"shooting":-0.5},dangers = woodsDangers)
 plains = Biome("plains",plainsTable,(187,255,157),weapon_boost = {"shooting":1})
+desert = Biome("desert",desertTable,(239,228,176))
 
-biomes = [woods,plains]
+biomes = [woods,plains,desert]
 
 class Game(object):
     def main(self,pause = False):
@@ -435,11 +481,37 @@ class Game(object):
                     else:
                         printf(player.name + " narrowly evades catching their leg in a bear trap, "+{True:"jerking it out of the way at the last moment.",False:"spotting the trap just before they would have stepped on it."}[player.stats["Dexterity"]>player.skills["Survival"]])
 
-                
-            loot = player.getCell().lootTable.fish()
+
+            tries = 0
+            loot = None
+            lootTable = player.getCell().lootTable
+            if player.getTagged("ranged"):
+                for item in lootTable.items:
+                    if "ranged_find_bonus" in item.tags:
+                        lootTable = lootTable.update(item,lootTable.contents[item]*2)
+                        #printf(player.name + "'s ranged weapon gives them a bonus to hunting!")
+            
+            while tries <= player.skills["Survival"] and not loot:
+                loot = lootTable.fish()
+                tries += 1
             if loot and not (loot in player.inventory and not "stackable" in loot.tags):
                 printf(player.name+" "+{True:"made",False:"found"}["crafted" in loot.tags]+" "+loot.an()+" "+loot.name+"!")
                 player.inventory.append(loot)
+
+            player.hunger -= random.randint(0,5+player.hunger/6)
+            if player.hunger<=40 and player.getTagged("food"):
+                while player.getTagged("food") and player.hunger<=60:
+                    printf(player.name + " eats " + player.getTagged("food")[0].name + ".")
+                    player.hunger += player.getTagged("food")[0].values["nutrition"]
+                    player.inventory.remove(player.getTagged("food")[0])
+            elif player.hunger <= 0:
+                printf(player.name + " starved to death!")
+                player.kill()
+            elif player.hunger <= 20:
+                printf(player.name + " is starving!")
+            elif player.hunger <= 40:
+                printf(player.name + " is hungry, but has nothing to eat!")
+                
 
     def combat_tick(self):
         fight = False
@@ -515,7 +587,7 @@ class Game(object):
 
     def printf_pos(self):
         for player in self.players:
-            printf(player.name+": ["+str(player.pos[0])+","+str(player.pos[1])+"] ("+player.getCell().biome.name+")")
+            printf(player.name+": ["+str(player.pos[0])+","+str(player.pos[1])+"] ("+player.getCell().biome.name+") HNG: "+str(player.hunger))
 
     def draw_map(self):
         biomeSurf = pygame.surface.Surface((CELL_SIZE,CELL_SIZE))
@@ -605,7 +677,7 @@ game.main()
 
 printf("/////////////////////////")
 printf("Victor:     "+game.players[0].name)
-printf("Inventory:  "+", ".join([i.name for i in game.players[0].inventory]))
+printf("Inventory:  "+displayItemList(game.players[0].inventory))
 printf("Kills:      "+str(len(game.players[0].kills)) + " (" + ", ".join([i.name for i in game.players[0].kills]) + ")")
 
 if pygame_installed:
@@ -616,6 +688,8 @@ def test(n):
     wins = dict([(player.name,0) for player in game.players])
     turns = []
     for i in range(n):
+        if not i%10:
+            print(i)
         reset()
         game.main()
         wins[game.players[0].name] += 1
