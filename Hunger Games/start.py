@@ -78,8 +78,6 @@ class Contestant:
 
         if pos == "c":
             self.pos = (game.map.dims[0]/2,game.map.dims[1]/2)
-            
-        game.map.grid[self.pos[0]][self.pos[1]].players.append(self)
 
     def challenge(self,stat,skill):
         total = {False:self.stats[stat],True:0}[stat == False] + {False:self.skills[skill],True:0}[skill == False]
@@ -787,6 +785,9 @@ def reset():
     Uhoh = Contestant("Katniss",skills = {"Shooting":5,"Survival":2,"Unarmed":1,"Melee":1},stats = {"Dexterity":3})
 
     game.players = [Patrick,Sofia,Oliver,Luke,Kimbal,Phyllie,Deborah,Chloe,Josh,Uhoh]
+
+    for player in game.players:
+        game.map.grid[player.pos[0]][player.pos[1]].players.append(player)
 
 reset()
 
