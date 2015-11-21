@@ -1,6 +1,7 @@
 import random,copy,sys
 
 try:
+    a
     import pygame
     import time
     pygame_installed = True
@@ -595,7 +596,8 @@ printf("Victor:     "+game.players[0].name)
 printf("Inventory:  "+", ".join([i.name for i in game.players[0].inventory]))
 printf("Kills:      "+str(len(game.players[0].kills)) + " (" + ", ".join([i.name for i in game.players[0].kills]) + ")")
 
-game.draw_tick()
+if pygame_installed:
+    game.draw_tick()
 
 def test(n):
     reset()
