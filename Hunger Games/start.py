@@ -54,7 +54,7 @@ class Contestant:
         self.pos = pos
         self.live = True
 
-        self.stats = {"Strength":2,"Dexterity":2,"Intelligence":2}
+        self.stats = {"Strength":2,"Dexterity":2}
         self.skills = {"Survival":0,"Stabbing":0,"Bow":0,"Unarmed":0,"Shooting":0}
 
         self.wounds = 0
@@ -290,7 +290,8 @@ class Map:
         self.dims = dims
         self.cells = []
         self.grid =  [[Cell(random.choice(biomes)) for i in range(dims[1])] for i in range(dims[0])]
-        
+
+        # Uncomment below for 'Desert Hell Mode'
         #for x in range(4,11):
         #    for y in range(4,11):
         #        self.grid[x][y] = Cell(desert)
@@ -666,8 +667,9 @@ def reset():
     Deborah = Contestant("Deborah")
     Chloe = Contestant("Chloe")
     Josh = Contestant("Josh")
+    Uhoh = Contestant("Katniss",skills = {"Shooting":5,"Survival":2,"Unarmed":1,"Stabbing":1},stats = {"Dexterity":3})
 
-    game.players = [Patrick,Sofia,Oliver,Luke,Kimbal,Phyllie,Deborah,Chloe,Josh]
+    game.players = [Patrick,Sofia,Oliver,Luke,Kimbal,Phyllie,Deborah,Chloe,Josh,Uhoh]
 
 reset()
 
