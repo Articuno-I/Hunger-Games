@@ -7,6 +7,8 @@ try:
 except:
     pygame_installed = False
 
+mode = "normal"
+
 KILL_DIFFICULTY = 5
 LETHAL_POPULATION = 3
 
@@ -15,6 +17,7 @@ FONT_SIZE = 10
 
 verbose = True
 logging = True
+pygame_installed = True and pygame_installed
 log = ""
 
 def printf(text):
@@ -350,6 +353,7 @@ class Biome:
 sharpStick = Item("Sharpened Stick",["melee","stabbing","weapon","flammable","crafted"],{"weaponStrength":1,"skill":"Stabbing","stat":"Strength"}) #weaponStrength is usually 1, 2 is good, 3 is insane.
 sword = Item("Sword",["melee","stabbing","weapon","flammable","slashing"],{"weaponStrength":2,"skill":"Stabbing","stat":"Dexterity"})
 handbow = Item("Hand-made Bow",["shooting","ranged","weapon","flammable","crafted"],{"weaponStrength":1,"skill":"Shooting","stat":"Dexterity"})
+photon = Item("Photon Blaster",["shooting","ranged","weapon"],{"weaponStrength":4,"skill":"Shooting","stat":"Dexterity"})
 lightsaber = Item("Lightsaber",["melee","stabbing","weapon","slashing"],{"weaponStrength":4,"skill":"Stabbing","stat":"Dexterity"})
 berries = Item("Handful of Berries",["food","stackable"],{"nutrition":25})
 bird_meat = Item("Small Bird (Cooked)",["food","stackable","ranged_find_bonus"],{"nutrition":50})
@@ -358,7 +362,8 @@ cornucopiaTable = Table({
 sharpStick : 1000,
 sword : 500,
 handbow : 750,
-lightsaber : 1
+lightsaber : {True:999999,False:1}[mode == "spacewar"],
+photon : {True:999999,False:1}[mode == "spacewar"]
     })
 
 #BIOME LOOT TABLES
@@ -383,6 +388,11 @@ desertTable = Table({
     bird_meat : 10
     },1500)
 
+spaceTable = Table({
+    lightsaber : 10,
+    photon : 10
+    },1500)
+
 #BIOME DANGER TABLES
 
 woodsDangers = Table({
@@ -394,8 +404,11 @@ woodsDangers = Table({
 woods = Biome("woods",woodsTable,(36,119,0),weapon_boost = {"shooting":-0.5},dangers = woodsDangers)
 plains = Biome("plains",plainsTable,(187,255,157),weapon_boost = {"shooting":1})
 desert = Biome("desert",desertTable,(239,228,176))
+space = Biome("space",spaceTable,(0,0,50))
 
 biomes = [woods,plains,desert]
+if mode == "spacewar":
+    biomes = [space]
 
 class Game(object):
     def main(self,pause = False):
@@ -515,7 +528,8 @@ class Game(object):
                 printf(player.name+" "+{True:"made",False:"found"}["crafted" in loot.tags]+" "+loot.an()+" "+loot.name+"!")
                 player.inventory.append(loot)
 
-            player.hunger -= random.randint(0,5+player.hunger/6)
+            if mode != "spacewar":
+                player.hunger -= random.randint(0,5+player.hunger/6)
             if player.hunger<=40 and player.getTagged("food"):
                 while player.getTagged("food") and player.hunger<=60:
                     printf(player.name + " eats " + player.getTagged("food")[0].name + ".")
@@ -617,7 +631,10 @@ class Game(object):
                 if names:
                     for i in range(len(names)):
                         name = names[i]
-                        firstPass = Calibri.render(name,1,(0,0,0))
+                        textcol = (0,0,0)
+                        if pygame.Color(self.map.grid[x][y].biome.colour[0],self.map.grid[x][y].biome.colour[1],self.map.grid[x][y].biome.colour[2]).hsla[2]<40:
+                            textcol = (255,255,255)
+                        firstPass = Calibri.render(name,1,textcol)
                         secondPass = pygame.transform.scale(firstPass,(CELL_SIZE,CELL_SIZE/len(names)))
                         biomeSurf.blit(secondPass,(0,i*CELL_SIZE/len(names)))
                 
@@ -704,7 +721,7 @@ def test(n):
     wins = dict([(player.name,0) for player in game.players])
     turns = []
     for i in range(n):
-        if not i%10:
+        if not i%200:
             print(i)
         reset()
         game.main()
