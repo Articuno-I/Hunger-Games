@@ -1,7 +1,6 @@
 import random,copy,sys
 
 try:
-    a
     import pygame
     import time
     pygame_installed = True
@@ -34,6 +33,7 @@ class Contestant:
         self.skills = {"Survival":0,"Stabbing":0,"Bow":0,"Unarmed":0,"Shooting":0}
 
         self.wounds = 0
+        self.wound_ticks = []
 
         if stats:
             for stat in stats:
@@ -169,6 +169,11 @@ class Contestant:
             otherBiomeBonus = 0
         
         return(self.compete(other,weaponStat,weaponSkill,otherWeaponStat,otherWeaponSkill,weaponStrength+other.wounds+biomeBonus,otherWeaponStrength+self.wounds+otherBiomeBonus))
+
+    def wound(self,number):
+        for i in range(number):
+            self.wounds += 1
+            self.wound_ticks.append(random.randint(6,9))
 
     def setpos(self,pos):
         game.map.grid[self.pos[0]][self.pos[1]].players.remove(self)
@@ -413,13 +418,20 @@ class Game(object):
 
     def action_tick(self):
         for player in random.sample(self.players,len(self.players)):
+            for i in range(len(player.wound_ticks)):
+                player.wound_ticks[i] -= 1
+                if player.wound_ticks[i] == 0:
+                    player.wounds -= 1
+                    printf(player.name + " managed to bandage up "+{True:"one of their injuries!",False:"their injury!"}[player.wounds>0])
+            while 0 in player.wound_ticks:
+                player.wound_ticks.remove(0)
             if player.getCell().biome.dangers:
                 danger = player.getCell().biome.dangers.fish()
                 if danger == "beartrap":
                     #bear trap!
                     if player.challenge("Dexterity","Survival") < 2:
                         printf(player.name + " gets their leg caught in a bear trap! They manage to force their leg out, but sustain a very nasty wound.")
-                        player.wounds += 2
+                        player.wound(2)
                     else:
                         printf(player.name + " narrowly evades catching their leg in a bear trap, "+{True:"jerking it out of the way at the last moment.",False:"spotting the trap just before they would have stepped on it."}[player.stats["Dexterity"]>player.skills["Survival"]])
 
@@ -476,7 +488,7 @@ class Game(object):
                         victor.loot(loser)
                     elif extent >= 2:
                         outcome = "nastywound"
-                        loser.wounds += 2
+                        loser.wound(2)
                         if victor.getWeapon()[0]:
                             weapText = victor.getWeapon()[0].name
                         else:
@@ -488,7 +500,7 @@ class Game(object):
                         victor.loot(loser,1)
                     elif extent >= 1:
                         outcome = "wound"
-                        loser.wounds += 1
+                        loser.wound(1)
                         if victor.getWeapon()[0]:
                             weapText = victor.getWeapon()[0].name
                         else:
