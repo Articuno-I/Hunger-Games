@@ -15,12 +15,16 @@ LETHAL_POPULATION = 3
 CELL_SIZE = 50
 FONT_SIZE = 50
 
+MAP_X, MAP_Y = 10,10
+
 MUT_CHANCE = 30 #out of 100
 
-verbose = True
-logging = True
-waiting = True
-pygame_installed = True and pygame_installed
+test_mode = False
+
+verbose = True and (not test_mode)
+logging = True and (not test_mode)
+waiting = True and (not test_mode)
+pygame_installed = True and pygame_installed and (not test_mode)
 log = ""
 
 def printf(text):
@@ -86,6 +90,7 @@ class Contestant:
         wins = 0
         for i in range(total):
             wins += {False:0,True:1}[random.randint(0,1) == 1]
+            wins += {False:0,True:1}[random.randint(0,5) == 1]
         return(wins)
 
     def compete(self,other,selfstat,selfskill,otherstat = None,otherskill = None,advantage=0,otheradvantage=0):
@@ -325,7 +330,6 @@ class Cell:
         return([player.name for player in self.players])
 
     def generate(self):
-        
         if self.biome:
             pass
         else:
@@ -492,7 +496,8 @@ spaceTable = Table({
 #BIOME DANGER TABLES
 
 woodsDangers = Table({
-    "beartrap" : 10
+    "beartrap" : 10,
+    "trackerjacker" : 20
     },2000)
 
 desertDangers = Table ({
@@ -572,10 +577,12 @@ class Game(object):
                 for i in range(int(self.turnSinceFight) + len(player.kills)):
                     if nDir in valid:
                         valid.append(nDir)
-            #printf(valid)
-            selected = random.choice(valid)
-            #printf(selected)
-            player.move(selected)
+
+            if valid:
+                #printf(valid)
+                selected = random.choice(valid)
+                #printf(selected)
+                player.move(selected)
 
         playerlist = copy.copy(self.players)
         if self.turnSinceFight >= 12 and len(self.players)>=2:
@@ -642,6 +649,28 @@ class Game(object):
                         player.hunger -= random.randint(0,5+player.hunger/6)
                     else:
                         printf(player.name + " thinks that they can make out something in the distance, but after a moment blinks, shakes their head and can see nothing.")
+                elif danger == "trackerjacker":
+                    if player.challenge("Intelligence","Survival") >= 3:
+                        printf(player.name + " nearly disturbs a nest full of tracker jackers, but spots it at the last moment.")
+                    else:
+                        printf(player.name + " accidentally disturbs a nest full of tracker jackers!")
+                        if player.challenge("Dexterity","Survival") >= 3:
+                            printf(player.name + " is, however, able to escape in time. That was close.")
+                        else:
+                            printf(player.name + " is stung!")
+                            result = player.challenge("Strength","Survival") - player.wounds
+                            if result >=3:
+                                printf(player.name + " is able to tolerate the worst of the poison, however, and only sustains a minor wound.")
+                                player.wound(1)
+                            elif result == 2:
+                                printf(player.name + " is wounded by the poison.")
+                                player.wound(2)
+                            elif result == 1:
+                                printf(player.name + " is seriously wounded by the poison.")
+                                player.wound(3)
+                            elif result <=0:
+                                printf(player.name + " succumbs to the poison and dies!")
+                                player.kill()
 
 
             tries = 0
@@ -762,6 +791,8 @@ class Game(object):
         mapSurf = pygame.surface.Surface((biomeSurf.get_width() * self.map.dims[0],biomeSurf.get_height() * self.map.dims[1]))
         for x in range(self.map.dims[0]):
             for y in range(self.map.dims[1]):
+                if not self.map.grid[x][y].biome:
+                    self.map.grid[x][y].generate()
                 biomeSurf.fill(self.map.grid[x][y].biome.colour)
 
                 names = self.map.grid[x][y].list_names()
@@ -809,7 +840,7 @@ def reset():
     game.day = 0
     game.phase = "Start"
     game.turnSinceFight = 0
-    game.map = Map((15,15))
+    game.map = Map((MAP_X,MAP_Y))
     game.map.generate()
 
 
@@ -862,14 +893,10 @@ def test(n):
     wins = dict([(player.name,0) for player in game.players])
     turns = []
     for i in range(n):
-        if not i%200:
+        if not i%10:
             print(i)
         reset()
         game.main()
         wins[game.players[0].name] += 1
         turns.append(game.turn)
     return(wins,sum(turns)/float(n))
-
-while not "Dynamite" in log:
-    reset()
-    game.main()
