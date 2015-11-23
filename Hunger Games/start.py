@@ -418,7 +418,7 @@ class Table:
     def fish(self):
         target = random.randint(1,self.intervals[-1])
         for i in range(len(self.intervals)-1):
-            if self.intervals[i] >= target:
+            if self.intervals[i] > target:
                 return(self.items[i])
         return(None)
 
@@ -428,12 +428,15 @@ class Table:
         return(Table(ncontents,self.bigN))
         
 class Biome:
+<<<<<<< HEAD
     def __init__(self,name,table,colour,weapon_boost={},dangers = None):
+=======
+    def __init__(self,name,table,weapon_boost={}):
+>>>>>>> parent of 44d288e... Biome hazards
         self.name = name
         self.table = table
         self.colour = colour
         self.weapon_boost = weapon_boost
-        self.dangers = dangers
 
     def get_bonus(self,weapon):
         bonus = 0
@@ -519,6 +522,7 @@ spaceTable = Table({
 
 #BIOME DANGER TABLES
 
+<<<<<<< HEAD
 woodsDangers = Table({
     "beartrap" : 10,
     "trackerjacker" : 20
@@ -529,6 +533,10 @@ desertDangers = Table ({
     },2000)
 
 #BIOMES                
+=======
+woods = Biome("woods",woodsTable,weapon_boost = {"shooting":-0.5})
+plains = Biome("plains",plainsTable,weapon_boost = {"shooting":1})
+>>>>>>> parent of 44d288e... Biome hazards
 
 woods = Biome("woods",woodsTable,(36,119,0),weapon_boost = {"shooting":-0.5},dangers = woodsDangers)
 plains = Biome("plains",plainsTable,(187,255,157),weapon_boost = {"shooting":1})
@@ -638,6 +646,7 @@ class Game(object):
 
     def action_tick(self):
         for player in random.sample(self.players,len(self.players)):
+<<<<<<< HEAD
             for i in range(len(player.wound_ticks)):
                 player.wound_ticks[i] -= 1
                 if player.wound_ticks[i] == 0:
@@ -745,6 +754,21 @@ class Game(object):
                 elif player.hunger <= 40:
                     printf(player.name + " is hungry, but has nothing to eat!")
                 
+=======
+            if not random.randint(0,99):
+                #bear trap!
+                if player.challenge("Dexterity","Survival") < 2:
+                    printf(player.name + " gets their leg caught in a bear trap! They manage to force their leg out, but sustain a very nasty wound.")
+                    player.wounds += 2
+                else:
+                    printf(player.name + " narrowly evades catching their leg in a bear trap, "+{True:"jerking it out of the way at the last moment.",False:"spotting the trap just before they would have stepped on it."}[player.stats["Dexterity"]>player.skills["Survival"]])
+
+            else:
+                loot = player.getCell().lootTable.fish()
+                if loot and not (loot in player.inventory and not "stackable" in loot.tags):
+                    printf(player.name+" "+{True:"made",False:"found"}["crafted" in loot.tags]+" "+loot.an()+" "+loot.name+"!")
+                    player.inventory.append(loot)
+>>>>>>> parent of 44d288e... Biome hazards
 
     def combat_tick(self):
         fight = False
@@ -887,6 +911,7 @@ def reset():
     game.map.generate()
 
 
+<<<<<<< HEAD
     Patrick = Contestant("Patrick",stats = {"Intelligence":3},skills = {"Melee":2,"Survival":1})
     Sofia = Contestant("Sofia",skills = {"Melee":4},stats = {"Dexterity":3})
     Oliver = Contestant("Oliver",skills = {"Melee":1},stats = {"Strength":1,"Intelligence":3},inventory = [])
@@ -902,6 +927,15 @@ def reset():
 
     for player in game.players:
         game.map.grid[player.pos[0]][player.pos[1]].players.append(player)
+=======
+    Patrick = Contestant("Patrick",skills = {"Stabbing":1})
+    Sofia = Contestant("Sofia",skills = {"Stabbing":5},stats = {"Dexterity":3})
+    Oliver = Contestant("Oliver",skills = {"Stabbing":1},stats = {"Strength":1},inventory = [])
+    Luke = Contestant("Luke",skills = {"Shooting":3,"Unarmed":2})
+    Kimbal = Contestant("Kimbal",stats={"Strength":4})
+
+    game.players = [Patrick,Sofia,Oliver,Luke,Kimbal]
+>>>>>>> parent of 44d288e... Biome hazards
 
 reset()
 
@@ -934,11 +968,11 @@ if pygame_installed:
 def test(n):
     reset()
     wins = dict([(player.name,0) for player in game.players])
-    turns = []
     for i in range(n):
         if not i%10:
             print(i)
         reset()
+<<<<<<< HEAD
         try:
             game.main()
             wins[game.players[0].name] += 1
@@ -954,3 +988,8 @@ def test(n):
 
 if test_mode:
     print(test(1000))
+=======
+        game.main()
+        wins[game.players[0].name] += 1
+    return(wins)
+>>>>>>> parent of 44d288e... Biome hazards
