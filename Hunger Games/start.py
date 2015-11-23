@@ -15,7 +15,7 @@ LETHAL_POPULATION = 3
 CELL_SIZE = 50
 FONT_SIZE = 50
 
-MAP_X, MAP_Y = 40,20
+MAP_X, MAP_Y = 10,10
 
 MUT_CHANCE = 30
 
@@ -72,6 +72,8 @@ class Contestant:
 
         self.hunger = 100
 
+        self.forcedDir = []
+
         if stats:
             for stat in stats:
                 self.stats[stat] = stats[stat]
@@ -92,6 +94,12 @@ class Contestant:
             wins += {False:0,True:1}[random.randint(0,1) == 1]
             wins += {False:0,True:1}[random.randint(0,5) == 1]
         return(wins)
+
+    def showStatus(self):
+        pass
+
+    def force_dirs(self,dirs):
+        self.forcedDir = dirs
 
     def compete(self,other,selfstat,selfskill,otherstat = None,otherskill = None,advantage=0,otheradvantage=0):
         if not otherstat:
@@ -586,15 +594,24 @@ class Game(object):
             for vec in ((1,0),(-1,0),(0,1),(0,-1)):
                 if game.map.is_valid((player.pos[0]+vec[0],player.pos[1]+vec[1])):
                     valid.append(vec)
-                    
-                nDir = player.getDir(player.getNearest().pos)
-                #printf((player.name,player.pos,player.getNearest().name,player.getNearest().pos,(-player.pos[0]--player.getNearest().pos[0],-player.pos[1]--player.getNearest().pos[1]),nDir))
-                for i in range(max(0,int(self.turnSinceFight)*2-4) + len(player.kills)):
-                    if nDir in valid:
-                        valid.append(nDir)
-                for i in range(player.wounds):
-                    if nDir in valid:
-                        valid.remove(nDir)
+
+                forcedValid = False
+                for elem in player.forcedDir:
+                    if elem in valid:
+                        forcedValid = True
+                        valid = player.forcedDir
+                        player.forcedDir = []
+                        break
+
+                if not forcedValid:
+                    nDir = player.getDir(player.getNearest().pos)
+                    #printf((player.name,player.pos,player.getNearest().name,player.getNearest().pos,(-player.pos[0]--player.getNearest().pos[0],-player.pos[1]--player.getNearest().pos[1]),nDir))
+                    for i in range(max(0,int(self.turnSinceFight)*2-4) + len(player.kills)):
+                        if nDir in valid:
+                            valid.append(nDir)
+                    for i in range(player.wounds):
+                        if nDir in valid:
+                            valid.remove(nDir)
 
             if valid:
                 #printf(valid)
@@ -672,9 +689,12 @@ class Game(object):
                         printf(player.name + " nearly disturbs a nest full of tracker jackers, but spots it at the last moment.")
                     else:
                         printf(player.name + " accidentally disturbs a nest full of tracker jackers!")
-                        if player.challenge("Dexterity","Survival") >= 3:
+                        result = player.challenge("Dexterity","Survival")
+                        if result >= 3 + player.wounds:
                             printf(player.name + " is, however, able to escape in time. That was close.")
                         else:
+                            if result >= 3 and result < 3 + player.wounds:
+                                printf(player.name + " is nearly able to escape, but is held back by their wound"+{True:"s",False:""}[player.wounds>1]+"!")
                             printf(player.name + " is stung!")
                             result = player.challenge("Strength","Survival") - player.wounds
                             if result >=3:
@@ -692,6 +712,7 @@ class Game(object):
 
             if player.live:
                 tries = 0
+                maxTries = 1 + sum([{True:1,False:0}[random.randint(0,9)<=3] for i in range(player.skills["Survival"])])
                 loot = None
                 lootTable = player.getCell().lootTable
                 if player.getTagged("ranged"):
@@ -700,7 +721,7 @@ class Game(object):
                             lootTable = lootTable.update(item,lootTable.contents[item]*2)
                             #printf(player.name + "'s ranged weapon gives them a bonus to hunting!")
                 
-                while tries <= player.skills["Survival"] and not loot:
+                while tries <= maxTries and not loot:
                     loot = lootTable.fish()
                     tries += 1
                 if loot and not (loot in player.inventory and not "stackable" in loot.tags):
