@@ -19,7 +19,7 @@ MAP_X, MAP_Y = 10,10
 
 MUT_CHANCE = 30
 
-test_mode = False
+test_mode = True
 
 verbose = True and (not test_mode)
 logging = True and (not test_mode)
@@ -32,10 +32,11 @@ def printf(text):
         global log
         log += text
         log += "\n"
-        
-        logfile = open("log.txt","w")
-        logfile.write(log)
-        logfile.close()
+
+        if not test_mode:
+            logfile = open("log.txt","w")
+            logfile.write(log)
+            logfile.close()
 
     if verbose:
         print(text)
@@ -590,34 +591,35 @@ class Game(object):
 
     def move_tick(self):
         for player in self.players:
-            valid = []
-            for vec in ((1,0),(-1,0),(0,1),(0,-1)):
-                if game.map.is_valid((player.pos[0]+vec[0],player.pos[1]+vec[1])):
-                    valid.append(vec)
+            if random.randint(1,3)>player.wounds:
+                valid = []
+                for vec in ((1,0),(-1,0),(0,1),(0,-1)):
+                    if game.map.is_valid((player.pos[0]+vec[0],player.pos[1]+vec[1])):
+                        valid.append(vec)
 
-                forcedValid = False
-                for elem in player.forcedDir:
-                    if elem in valid:
-                        forcedValid = True
-                        valid = player.forcedDir
-                        player.forcedDir = []
-                        break
+                    forcedValid = False
+                    for elem in player.forcedDir:
+                        if elem in valid:
+                            forcedValid = True
+                            valid = player.forcedDir
+                            player.forcedDir = []
+                            break
 
-                if not forcedValid:
-                    nDir = player.getDir(player.getNearest().pos)
-                    #printf((player.name,player.pos,player.getNearest().name,player.getNearest().pos,(-player.pos[0]--player.getNearest().pos[0],-player.pos[1]--player.getNearest().pos[1]),nDir))
-                    for i in range(max(0,int(self.turnSinceFight)*2-4) + len(player.kills)):
-                        if nDir in valid:
-                            valid.append(nDir)
-                    for i in range(player.wounds):
-                        if nDir in valid:
-                            valid.remove(nDir)
+                    if not forcedValid:
+                        nDir = player.getDir(player.getNearest().pos)
+                        #printf((player.name,player.pos,player.getNearest().name,player.getNearest().pos,(-player.pos[0]--player.getNearest().pos[0],-player.pos[1]--player.getNearest().pos[1]),nDir))
+                        for i in range(max(0,int(self.turnSinceFight)*2-4) + len(player.kills)):
+                            if nDir in valid:
+                                valid.append(nDir)
+                        for i in range(player.wounds):
+                            if nDir in valid:
+                                valid.remove(nDir)
 
-            if valid:
-                #printf(valid)
-                selected = random.choice(valid)
-                #printf(selected)
-                player.move(selected)
+                if valid:
+                    #printf(valid)
+                    selected = random.choice(valid)
+                    #printf(selected)
+                    player.move(selected)
 
         playerlist = copy.copy(self.players)
         if self.turnSinceFight >= 12 and len(self.players)>=2:
@@ -885,15 +887,15 @@ def reset():
     game.map.generate()
 
 
-    Patrick = Contestant("Patrick",stats = {"Intelligence":3},skills = {"Melee":1})
-    Sofia = Contestant("Sofia",skills = {"Melee":5},stats = {"Dexterity":3})
+    Patrick = Contestant("Patrick",stats = {"Intelligence":3},skills = {"Melee":2,"Survival":1})
+    Sofia = Contestant("Sofia",skills = {"Melee":4},stats = {"Dexterity":3})
     Oliver = Contestant("Oliver",skills = {"Melee":1},stats = {"Strength":1,"Intelligence":3},inventory = [])
     Luke = Contestant("Luke",skills = {"Shooting":3,"Unarmed":2,"Intelligence":3})
     Kimbal = Contestant("Kimbal",stats={"Strength":4,"Intelligence":3})
     Phyllie = Contestant("Phyllie",stats = {"Intelligence":3})
-    Deborah = Contestant("Deborah")
+    Deborah = Contestant("Deborah",skills = {"Melee":2})
     Chloe = Contestant("Chloe")
-    Josh = Contestant("Josh")
+    Josh = Contestant("Josh",stats = {"Strength":3})
     Uhoh = Contestant("Katniss",skills = {"Shooting":5,"Survival":2,"Unarmed":1,"Melee":1},stats = {"Dexterity":3})
 
     game.players = [Patrick,Sofia,Oliver,Luke,Kimbal,Phyllie,Deborah,Chloe,Josh,Uhoh]
@@ -937,9 +939,17 @@ def test(n):
         if not i%10:
             print(i)
         reset()
-        game.main()
-        wins[game.players[0].name] += 1
-        turns.append(game.turn)
+        try:
+            game.main()
+            wins[game.players[0].name] += 1
+            turns.append(game.turn)
+        except:
+            print("Game crashed!")
+            logfile = open("log.txt","w")
+            logfile.write(log)
+            logfile.close()
+            a = raw_input()
+
     return(wins,sum(turns)/float(n))
 
 if test_mode:
