@@ -15,9 +15,9 @@ LETHAL_POPULATION = 3
 CELL_SIZE = 50
 FONT_SIZE = 50
 
-MAP_X, MAP_Y = 10,10
+MAP_X, MAP_Y = 40,20
 
-MUT_CHANCE = 30 #out of 100
+MUT_CHANCE = 30
 
 test_mode = False
 
@@ -98,10 +98,17 @@ class Contestant:
             otherstat = selfstat
         if not otherskill:
             otherskill = selfskill
-        
-        selfTotal = self.stats[selfstat] + self.skills[selfskill]
-        otherTotal = other.stats[otherstat] + other.skills[otherskill]
 
+        selfTotal = 0
+        otherTotal = 0
+        if selfstat:
+            selfTotal += self.stats[selfstat]
+        if selfskill:
+            selfTotal += self.skills[selfskill]
+        if otherstat:
+            otherTotal += other.stats[otherstat]
+        if otherskill:
+            otherTotal += other.skills[otherskill]
         selfTotal += advantage
         otherTotal += otheradvantage
 
@@ -176,9 +183,13 @@ class Contestant:
     def getWeapon(self):
         fStrength = self.skills["Unarmed"] + self.stats["Strength"]
         wChoice = None
+        
         for weapon in self.getTagged("weapon"):
-            if self.skills[weapon.getSkill(self)] + weapon.values["weaponStrength"] + self.stats[weapon.getStat(self)] + self.getCell().biome.get_bonus(weapon) >= fStrength:
-                fStrength = self.skills[weapon.getSkill(self)] + weapon.values["weaponStrength"] + self.stats[weapon.getStat(self)] + self.getCell().biome.get_bonus(weapon)
+            communist = 0
+            if self.name in ("Patrick","Deborah") and "communist" in weapon.tags:
+                communist = 3
+            if self.skills[weapon.getSkill(self)] + weapon.values["weaponStrength"] + self.stats[weapon.getStat(self)] + self.getCell().biome.get_bonus(weapon) + communist >= fStrength:
+                fStrength = self.skills[weapon.getSkill(self)] + weapon.values["weaponStrength"] + self.stats[weapon.getStat(self)] + self.getCell().biome.get_bonus(weapon) + communist
                 wChoice = weapon
         return(wChoice,fStrength)
 
@@ -199,10 +210,6 @@ class Contestant:
             hungerBonus += 1
 
         if weapon:
-            weaponStat = weapon.getStat(self)
-            weaponSkill = weapon.getSkill(self)
-            weaponStrength = weapon.values["weaponStrength"]
-            biomeBonus = self.getCell().biome.get_bonus(weapon)
             if "durability" in weapon.values:
                 if random.randint(0,100)>weapon.values["durability"]:
                     self.inventory.remove(weapon)
@@ -216,17 +223,21 @@ class Contestant:
             weaponStrength = 0
             biomeBonus = 0
         if otherWeapon:
-            otherWeaponStat = otherWeapon.getStat(other)
-            otherWeaponSkill = otherWeapon.getSkill(other)
-            otherWeaponStrength = otherWeapon.values["weaponStrength"]
-            otherBiomeBonus = other.getCell().biome.get_bonus(otherWeapon)
+            if "durability" in otherWeapon.values:
+                if random.randint(0,100)>otherWeapon.values["durability"]:
+                    other.inventory.remove(otherWeapon)
+                    printf(other.name+"'s "+otherWeapon.name+" breaks!")
+            elif "consumable" in otherWeapon.tags:
+                other.inventory.remove(otherWeapon)
+                printf(other.name + " uses their "+otherWeapon.name+".")
+            
         else:
             otherWeaponStat = "Strength"
             otherWeaponSkill = "Unarmed"
             otherWeaponStrength = 0
             otherBiomeBonus = 0
         
-        return(self.compete(other,weaponStat,weaponSkill,otherWeaponStat,otherWeaponSkill,weaponStrength+other.wounds+biomeBonus-otherHungerBonus,otherWeaponStrength+self.wounds+otherBiomeBonus-hungerBonus))
+        return(self.compete(other,None,None,None,None,weapBonus-otherHungerBonus,otherWeapBonus-hungerBonus))
 
     def wound(self,number):
         for i in range(number):
@@ -246,10 +257,11 @@ class Contestant:
             return(False)
 
     def kill(self):
-        game.map.grid[self.pos[0]][self.pos[1]].players.remove(self)
-        self.live = False
-        game.players.remove(self)
-        game.fallen.append(self)
+        if self.live:
+            game.map.grid[self.pos[0]][self.pos[1]].players.remove(self)
+            self.live = False
+            game.players.remove(self)
+            game.fallen.append(self)
 
     def loot(self,other,quantity="all"):
         if quantity == "all":   quantity = len(other.inventory)
@@ -439,11 +451,13 @@ firstaid = Item("First Aid Kit",["stackable","medical"],{"healstrength":2})
 throwknives = Item("Throwing Knives",["melee","ranged","weapon","throwing"],{"weaponStrength":1,"skill":"Throwing","stat":"Dexterity"})
 spear = Item("Spear",["melee","ranged","weapon","throwing"],{"weaponStrength":2,"skill":("Throwing","Melee"),"stat":("Dexterity","Strength")})
 dynamite = Item("Dynamite",["explosive","weapon","consumable"],{"weaponStrength":6,"skill":"Explosives","stat":"Intelligence"})
+sickle = Item("Sickle",["communist","weapon","melee","slashing"],{"weaponStrength":2,"skill":"Melee","stat":"Strength"})
 
 cornucopiaTable = Table({
 sword : 500,
 mace : 500,
 spear : 500,
+sickle : 500,
 bandage : 500,
 dynamite : 250,
 throwknives : 500,
@@ -474,6 +488,7 @@ plainsTable = Table({
     sword : 20,
     mace : 20,
     spear : 25,
+    sickle : 30,
     throwknives : 20,
     energybar : 20,
     handbow : 40,
@@ -508,7 +523,7 @@ desertDangers = Table ({
 
 woods = Biome("woods",woodsTable,(36,119,0),weapon_boost = {"shooting":-0.5},dangers = woodsDangers)
 plains = Biome("plains",plainsTable,(187,255,157),weapon_boost = {"shooting":1})
-desert = Biome("desert",desertTable,(239,228,176),dangers = desertDangers)
+desert = Biome("desert",desertTable,(255,209,143),dangers = desertDangers)
 space = Biome("space",spaceTable,(0,0,50))
 
 biomes = [woods,plains,desert]
@@ -574,9 +589,12 @@ class Game(object):
                     
                 nDir = player.getDir(player.getNearest().pos)
                 #printf((player.name,player.pos,player.getNearest().name,player.getNearest().pos,(-player.pos[0]--player.getNearest().pos[0],-player.pos[1]--player.getNearest().pos[1]),nDir))
-                for i in range(int(self.turnSinceFight) + len(player.kills)):
+                for i in range(max(0,int(self.turnSinceFight)*2-4) + len(player.kills)):
                     if nDir in valid:
                         valid.append(nDir)
+                for i in range(player.wounds):
+                    if nDir in valid:
+                        valid.remove(nDir)
 
             if valid:
                 #printf(valid)
@@ -672,37 +690,37 @@ class Game(object):
                                 printf(player.name + " succumbs to the poison and dies!")
                                 player.kill()
 
+            if player.live:
+                tries = 0
+                loot = None
+                lootTable = player.getCell().lootTable
+                if player.getTagged("ranged"):
+                    for item in lootTable.items:
+                        if "ranged_find_bonus" in item.tags:
+                            lootTable = lootTable.update(item,lootTable.contents[item]*2)
+                            #printf(player.name + "'s ranged weapon gives them a bonus to hunting!")
+                
+                while tries <= player.skills["Survival"] and not loot:
+                    loot = lootTable.fish()
+                    tries += 1
+                if loot and not (loot in player.inventory and not "stackable" in loot.tags):
+                    printf(player.name+" "+{True:"made",False:"found"}["crafted" in loot.tags]+" "+loot.an()+" "+loot.name+"!")
+                    player.inventory.append(loot)
 
-            tries = 0
-            loot = None
-            lootTable = player.getCell().lootTable
-            if player.getTagged("ranged"):
-                for item in lootTable.items:
-                    if "ranged_find_bonus" in item.tags:
-                        lootTable = lootTable.update(item,lootTable.contents[item]*2)
-                        #printf(player.name + "'s ranged weapon gives them a bonus to hunting!")
-            
-            while tries <= player.skills["Survival"] and not loot:
-                loot = lootTable.fish()
-                tries += 1
-            if loot and not (loot in player.inventory and not "stackable" in loot.tags):
-                printf(player.name+" "+{True:"made",False:"found"}["crafted" in loot.tags]+" "+loot.an()+" "+loot.name+"!")
-                player.inventory.append(loot)
-
-            if mode != "spacewar":
-                player.hunger -= random.randint(0,5+player.hunger/6)
-            if player.hunger<=40 and player.getTagged("food"):
-                while player.getTagged("food") and player.hunger<=60:
-                    printf(player.name + " eats " + player.getTagged("food")[0].name + ".")
-                    player.hunger += player.getTagged("food")[0].values["nutrition"]
-                    player.inventory.remove(player.getTagged("food")[0])
-            elif player.hunger <= 0 and len(game.players)>2:
-                printf(player.name + " starved to death!")
-                player.kill()
-            elif player.hunger <= 20:
-                printf(player.name + " is starving!")
-            elif player.hunger <= 40:
-                printf(player.name + " is hungry, but has nothing to eat!")
+                if mode != "spacewar":
+                    player.hunger -= random.randint(0,5+player.hunger/6)
+                if player.hunger<=40 and player.getTagged("food"):
+                    while player.getTagged("food") and player.hunger<=60:
+                        printf(player.name + " eats " + player.getTagged("food")[0].name + ".")
+                        player.hunger += player.getTagged("food")[0].values["nutrition"]
+                        player.inventory.remove(player.getTagged("food")[0])
+                elif player.hunger <= 0 and len(game.players)>2:
+                    printf(player.name + " starved to death!")
+                    player.kill()
+                elif player.hunger <= 20:
+                    printf(player.name + " is starving!")
+                elif player.hunger <= 40:
+                    printf(player.name + " is hungry, but has nothing to eat!")
                 
 
     def combat_tick(self):
@@ -741,7 +759,9 @@ class Game(object):
                             weapText = "their bare hands"
                             
                         if extent >= KILL_DIFFICULTY-1 and weapon:
-                            if "slashing" in weapon.tags:
+                            if "communist" in weapon.tags:
+                                printf(victor.name + " VANQUISHES " + loser.name + " with RIGHTEOUS COMMUNIST AGRICULTURE.")
+                            elif "slashing" in weapon.tags:
                                 printf(victor.name + " DECAPITATES " + loser.name + " with a fell swoop of their "+weapon.name + "!")
                             elif "stabbing" in weapon.tags:
                                 printf(victor.name + " IMPALES " + loser.name + " with a powerful thrust of their " + weapon.name + "!")
@@ -900,3 +920,6 @@ def test(n):
         wins[game.players[0].name] += 1
         turns.append(game.turn)
     return(wins,sum(turns)/float(n))
+
+if test_mode:
+    print(test(1000))
