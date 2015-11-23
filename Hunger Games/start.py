@@ -591,7 +591,7 @@ class Game(object):
 
     def move_tick(self):
         for player in self.players:
-            if random.randint(1,3)>player.wounds:
+            if True:
                 valid = []
                 for vec in ((1,0),(-1,0),(0,1),(0,-1)):
                     if game.map.is_valid((player.pos[0]+vec[0],player.pos[1]+vec[1])):
@@ -611,7 +611,7 @@ class Game(object):
                         for i in range(max(0,int(self.turnSinceFight)*2-4) + len(player.kills)):
                             if nDir in valid:
                                 valid.append(nDir)
-                        for i in range(player.wounds):
+                        for i in range(max(0,player.wounds-2)*3):
                             if nDir in valid:
                                 valid.remove(nDir)
 
